@@ -10,10 +10,10 @@
     <ImageView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:srcCompat="@drawable/ic_spectrum_temp_logo"
         android:id="@+id/background"
         android:paddingLeft="20dp"
-        android:paddingRight="20dp" />
+        android:paddingRight="20dp"
+        app:srcCompat="@drawable/spectrum_logo" />
 
     <ImageView
         android:layout_width="match_parent"
