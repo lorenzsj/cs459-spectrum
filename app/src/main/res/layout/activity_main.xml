@@ -19,10 +19,11 @@
         android:layout_width="match_parent"
         app:srcCompat="@android:color/background_dark"
         android:id="@+id/primaryImage"
-        tools:visibility="invisible"
+        tools:visibility="visible"
         android:baselineAlignBottom="false"
         android:cropToPadding="false"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:clickable="true" />
 
     <ImageButton
         android:layout_width="75dp"

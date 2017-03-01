@@ -190,7 +190,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-
     //currently unused from default activity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
