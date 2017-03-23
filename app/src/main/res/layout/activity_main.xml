@@ -23,7 +23,8 @@
         android:baselineAlignBottom="false"
         android:cropToPadding="false"
         android:layout_height="match_parent"
-        android:clickable="true" />
+        android:clickable="true"
+        android:scaleType="fitXY" />
 
     <ImageButton
         android:layout_width="75dp"

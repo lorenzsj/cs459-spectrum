@@ -15,10 +15,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
+import android.util.Log;
 
 import com.squareup.picasso.Picasso;
 
@@ -32,6 +34,11 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
 
 public class MainActivity extends AppCompatActivity {
 
+    /* start touch variables */
+    private static final String DEBUG_TAG = "SJL";
+
+    private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
+    /* end touch variables  */
 
     private static final int RESULT_TAKE_PHOTO = 1;
 
@@ -54,6 +61,8 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        addTouchListener(); // stephen
+
         ImageButton cameraButton = (ImageButton) findViewById(R.id.cameraButton);
         ImageButton importButton = (ImageButton) findViewById(R.id.importButton);
 
@@ -66,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick( View view ) {
                 dispatchTakePictureIntent();
-              }
+            }
         });
 
         //import button listener
@@ -79,6 +88,44 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
+    /* start touch functions */
+    private void addTouchListener() {
+        ImageView image = (ImageView)findViewById(R.id.primaryImage);
+
+        image.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                float x = event.getX();
+                float y = event.getY();
+
+                try {
+                    String debugMessage = String.format("Coordinates: (%.2f, %.2f)", x, y);
+
+                    Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
+
+                    Log.d(MainActivity.DEBUG_TAG, debugMessage);
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "Something went wrong.", Toast.LENGTH_LONG).show();
+                }
+
+                return false;
+            }
+        });
+    }
+
+    public boolean onTouchEvent(MotionEvent e) {
+        float x = e.getX();
+        float y = e.getY();
+
+        switch (e.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                System.out.print("Pressed");
+        }
+
+        return true;
+    }
+    /* end touch functions */
 
 
     private void dispatchTakePictureIntent() {

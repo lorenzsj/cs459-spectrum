@@ -39,6 +39,9 @@ captures/
 # Keystore files
 *.jks
 
+.idea/
+
+
 *.iml
 .gradle
 /local.properties
@@ -48,5 +51,3 @@ captures/
 /build
 /captures
 .externalNativeBuild
-
-
