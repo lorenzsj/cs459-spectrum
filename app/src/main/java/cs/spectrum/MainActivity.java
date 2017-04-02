@@ -4,6 +4,9 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -63,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
         addTouchListener(); // stephen
 
+
         ImageButton cameraButton = (ImageButton) findViewById(R.id.cameraButton);
         ImageButton importButton = (ImageButton) findViewById(R.id.importButton);
 
@@ -98,13 +102,15 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 float x = event.getX();
                 float y = event.getY();
-
+                loadToBitmap( v, Math.round(x), Math.round(y));
                 try {
-                    String debugMessage = String.format("Coordinates: (%.2f, %.2f)", x, y);
+                    String debugMessage = String.format("Coordinates: (%.0f, %.0f)", x, y);
 
                     Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
 
-                    Log.d(MainActivity.DEBUG_TAG, debugMessage);
+                    //Log.d(MainActivity.DEBUG_TAG, debugMessage);
+
+
                 } catch (Exception e) {
                     Toast.makeText(getApplicationContext(), "Something went wrong.", Toast.LENGTH_LONG).show();
                 }
@@ -127,6 +133,23 @@ public class MainActivity extends AppCompatActivity {
     }
     /* end touch functions */
 
+
+    private void loadToBitmap( View v, int x, int y ) {
+        ImageView imageView = ((ImageView)v);
+        Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+        int pixel = bitmap.getPixel(x, y);
+
+        int redValue = Color.red(pixel);
+        int blueValue = Color.blue(pixel);
+        int greenValue = Color.green(pixel);
+
+        String debugMessage = redValue + ", " + greenValue + ", " +  blueValue;
+
+        //Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
+        System.out.println(debugMessage);
+
+        //Log.d(MainActivity.DEBUG_TAG, debugMessage);
+    }
 
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);

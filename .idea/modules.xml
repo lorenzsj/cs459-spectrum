@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/cs459-spectrum.iml" filepath="$PROJECT_DIR$/cs459-spectrum.iml" />
+      <module fileurl="file://$PROJECT_DIR$/cs459-spectrum-master.iml" filepath="$PROJECT_DIR$/cs459-spectrum-master.iml" />
     </modules>
   </component>
 </project>
