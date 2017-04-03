@@ -2,15 +2,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="cs.spectrum.MainActivity">
-    <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_help"
+        android:id="@+id/action_Hide_Buttons"
+        android:orderInCategory="100"
+        app:showAsAction="never"
+        android:title="Hide Buttons" />
+
+    <item
+        android:id="@+id/action_Show_Buttons"
         android:orderInCategory="200"
         app:showAsAction="never"
-        android:title="Help" />
+        android:title="Show Buttons" />
 </menu>

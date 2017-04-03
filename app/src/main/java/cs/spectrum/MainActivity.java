@@ -20,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -102,17 +103,19 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 float x = event.getX();
                 float y = event.getY();
-                loadToBitmap( v, Math.round(x), Math.round(y));
+
                 try {
+
+                    loadToBitmap( v, Math.round(x), Math.round(y));
                     String debugMessage = String.format("Coordinates: (%.0f, %.0f)", x, y);
 
-                    Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
 
                     //Log.d(MainActivity.DEBUG_TAG, debugMessage);
 
 
                 } catch (Exception e) {
-                    Toast.makeText(getApplicationContext(), "Something went wrong.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getApplicationContext(), String.format("Coordinates: (%.0f, %.0f)", x, y) , Toast.LENGTH_LONG).show();
                 }
 
                 return false;
@@ -139,13 +142,19 @@ public class MainActivity extends AppCompatActivity {
         Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
         int pixel = bitmap.getPixel(x, y);
 
+        System.out.println("(X, Y) = (" + x + ", " + y);
+
         int redValue = Color.red(pixel);
         int blueValue = Color.blue(pixel);
         int greenValue = Color.green(pixel);
 
-        String debugMessage = redValue + ", " + greenValue + ", " +  blueValue;
+        String debugMessage = "(" + x + ", " + y + ")\t" +redValue + ", " + greenValue + ", " +  blueValue;
+        int height = bitmap.getHeight();
+        int width = bitmap.getWidth();
+        String bitmapDims = "Height: " + height + "\tWidth: " + width;
+        //Toast.makeText(getApplicationContext(), bitmapDims, Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
 
-        //Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
         System.out.println(debugMessage);
 
         //Log.d(MainActivity.DEBUG_TAG, debugMessage);
@@ -203,8 +212,8 @@ public class MainActivity extends AppCompatActivity {
                         .with(imgView.getContext())
                         .load(selectedImage)
                         .error(R.mipmap.ic_failed)
-                        .resize(RESIZED_IMG_WIDTH,0)
-                        .onlyScaleDown()
+                        //.resize(RESIZED_IMG_WIDTH,0)
+                        //.onlyScaleDown()
                         .into(imgView);
 
                 // When an image is taken from camera
@@ -216,8 +225,8 @@ public class MainActivity extends AppCompatActivity {
                         .load(mCurrentPhotoUri)
                         .error(R.mipmap.ic_failed)
                         .rotate(90)
-                        .resize(RESIZED_IMG_WIDTH,0)
-                        .onlyScaleDown()
+                        //.resize(RESIZED_IMG_WIDTH,0)
+                        //.onlyScaleDown()
                         .into(imgView);
             } else {
                 Toast.makeText(this, "You haven't selected an image.",
@@ -277,8 +286,18 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        if (id == R.id.action_Hide_Buttons) {
+            ImageButton cameraButton = (ImageButton)findViewById(R.id.cameraButton);
+            ImageButton importButton = (ImageButton)findViewById(R.id.importButton);
+
+            cameraButton.setVisibility(View.GONE);
+            importButton.setVisibility(View.GONE);
+        } else if (id == R.id.action_Show_Buttons) {
+            ImageButton cameraButton = (ImageButton)findViewById(R.id.cameraButton);
+            ImageButton importButton = (ImageButton)findViewById(R.id.importButton);
+
+            cameraButton.setVisibility(View.VISIBLE);
+            importButton.setVisibility(View.VISIBLE);
         }
 
         return super.onOptionsItemSelected(item);
