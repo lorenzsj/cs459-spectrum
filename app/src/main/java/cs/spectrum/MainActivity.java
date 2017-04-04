@@ -6,16 +6,19 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -48,7 +51,17 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int RESULT_LOAD_IMG = 2;
 
-    private static final int RESIZED_IMG_WIDTH = 1920;
+    private static final int RESIZED_IMG_WIDTH = 1080;
+
+    private static int DISPLAY_WIDTH;
+    private static int DISPLAY_HEIGHT;
+
+    private static int PRIMARY_IMAGE_VIEW_WIDTH;
+    private static int PRIMARY_IMAGE_VIEW_HEIGHT;
+
+    private static int BITMAP_IMAGE_VIEW_WIDTH;
+    private static int BITMAP_IMAGE_VIEW_HEIGHT;
+
 
     private Uri mCurrentPhotoUri = null;
 
@@ -75,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
 
+        getDisplaySize();
+
         //cameraButton listener
         cameraButton.setOnClickListener( new View.OnClickListener() {
             @Override
@@ -94,6 +109,18 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void getDisplaySize(){
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+
+        display.getSize(size);
+
+        DISPLAY_WIDTH = size.x;
+        DISPLAY_HEIGHT = size.y;
+
+        System.out.println("Display width x height: " + DISPLAY_WIDTH + ", " + DISPLAY_HEIGHT);
+    }
+
     /* start touch functions */
     private void addTouchListener() {
         ImageView image = (ImageView)findViewById(R.id.primaryImage);
@@ -104,10 +131,24 @@ public class MainActivity extends AppCompatActivity {
                 float x = event.getX();
                 float y = event.getY();
 
+                float widthRatio = (float) BITMAP_IMAGE_VIEW_WIDTH * (float) PRIMARY_IMAGE_VIEW_WIDTH;
+                float heightRatio = (float) BITMAP_IMAGE_VIEW_HEIGHT * (float) PRIMARY_IMAGE_VIEW_HEIGHT;
+
+                System.out.println( "widthRatio: " + widthRatio );
+                System.out.println( "heightRatio: " + heightRatio );
+
                 try {
 
-                    loadToBitmap( v, Math.round(x), Math.round(y));
-                    String debugMessage = String.format("Coordinates: (%.0f, %.0f)", x, y);
+
+
+                    int X_Image =  (int)(x * widthRatio);
+                    int Y_Image =  (int)(y * heightRatio);
+
+                    System.out.println( "SCALED X: " + X_Image );
+                    System.out.println( "SCALED Y: " + Y_Image );
+
+                    //loadToBitmap( v, Math.round(x), Math.round(y));
+                    //String debugMessage = String.format("Coordinates: (%.0f, %.0f)", x, y);
 
                     //Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
 
@@ -115,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 } catch (Exception e) {
-                    Toast.makeText(getApplicationContext(), String.format("Coordinates: (%.0f, %.0f)", x, y) , Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getApplicationContext(), String.format("Coordinates: (%.0f, %.0f)", x, y) , Toast.LENGTH_LONG).show();
                 }
 
                 return false;
@@ -137,27 +178,13 @@ public class MainActivity extends AppCompatActivity {
     /* end touch functions */
 
 
-    private void loadToBitmap( View v, int x, int y ) {
-        ImageView imageView = ((ImageView)v);
-        Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
-        int pixel = bitmap.getPixel(x, y);
+    private void getBitmapSize( View v ) {
+        ImageView imageView = ((ImageView) v);
+        Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
 
-        System.out.println("(X, Y) = (" + x + ", " + y);
+        BITMAP_IMAGE_VIEW_HEIGHT = bitmap.getHeight();
+        BITMAP_IMAGE_VIEW_WIDTH = bitmap.getWidth();
 
-        int redValue = Color.red(pixel);
-        int blueValue = Color.blue(pixel);
-        int greenValue = Color.green(pixel);
-
-        String debugMessage = "(" + x + ", " + y + ")\t" +redValue + ", " + greenValue + ", " +  blueValue;
-        int height = bitmap.getHeight();
-        int width = bitmap.getWidth();
-        String bitmapDims = "Height: " + height + "\tWidth: " + width;
-        //Toast.makeText(getApplicationContext(), bitmapDims, Toast.LENGTH_LONG).show();
-        Toast.makeText(getApplicationContext(), debugMessage, Toast.LENGTH_LONG).show();
-
-        System.out.println(debugMessage);
-
-        //Log.d(MainActivity.DEBUG_TAG, debugMessage);
     }
 
     private void dispatchTakePictureIntent() {
@@ -208,13 +235,24 @@ public class MainActivity extends AppCompatActivity {
 
                 ImageView imgView = (ImageView) findViewById(R.id.primaryImage);
                 // Set the Image in ImageView after resizing if too large
+                //Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImage);
+                //System.out.println();
+
                 Picasso
                         .with(imgView.getContext())
                         .load(selectedImage)
                         .error(R.mipmap.ic_failed)
-                        //.resize(RESIZED_IMG_WIDTH,0)
-                        //.onlyScaleDown()
+                        .resize(RESIZED_IMG_WIDTH,0)
+                        .onlyScaleDown()
                         .into(imgView);
+
+                PRIMARY_IMAGE_VIEW_WIDTH = imgView.getWidth();
+                PRIMARY_IMAGE_VIEW_HEIGHT = imgView.getHeight();
+
+                System.out.println("Height: " + PRIMARY_IMAGE_VIEW_HEIGHT);
+                System.out.println("Width: " + PRIMARY_IMAGE_VIEW_WIDTH);
+
+                getBitmapSize(imgView);
 
                 // When an image is taken from camera
             } else if (requestCode == RESULT_TAKE_PHOTO && resultCode == RESULT_OK){
@@ -225,9 +263,18 @@ public class MainActivity extends AppCompatActivity {
                         .load(mCurrentPhotoUri)
                         .error(R.mipmap.ic_failed)
                         .rotate(90)
-                        //.resize(RESIZED_IMG_WIDTH,0)
-                        //.onlyScaleDown()
+                        .resize(RESIZED_IMG_WIDTH,0)
+                        .onlyScaleDown()
                         .into(imgView);
+
+                PRIMARY_IMAGE_VIEW_WIDTH = imgView.getWidth();
+                PRIMARY_IMAGE_VIEW_HEIGHT = imgView.getHeight();
+
+                System.out.println("Height: " + PRIMARY_IMAGE_VIEW_HEIGHT);
+                System.out.println("Width: " + PRIMARY_IMAGE_VIEW_WIDTH);
+
+                getBitmapSize(imgView);
+
             } else {
                 Toast.makeText(this, "You haven't selected an image.",
                         Toast.LENGTH_LONG).show();

@@ -49,7 +49,6 @@
                 android:baselineAlignBottom="false"
                 android:clickable="true"
                 android:cropToPadding="false"
-                android:scaleType="matrix"
                 app:srcCompat="@android:color/background_dark"
                 tools:visibility="visible" />
 
