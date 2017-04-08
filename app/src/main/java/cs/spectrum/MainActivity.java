@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
@@ -131,54 +132,54 @@ public class MainActivity extends AppCompatActivity {
         image.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                float x = event.getX();
-                float y = event.getY();
-
 
                 if (event.getAction() == MotionEvent.ACTION_UP) { //only runs the following code when finger is lifted
                     try {
 
+                        ImageView image = (ImageView)findViewById(R.id.primaryImage);
+
+                        float[] coord = getPointerCoords(image,event);
+
+                        System.out.println(coord[0] + ", " + coord[1]);
+
+                        int X_Image = Math.round(coord[0]);
+                        int Y_Image = Math.round(coord[1]);
+
                         getBitmapSize(v);
 
-                        //resizeImageView(v, BITMAP_IMAGE_VIEW_HEIGHT, BITMAP_IMAGE_VIEW_WIDTH);
-                        /*
-                           Something about this code is off but I cannot figure out what. The
-                           returned colors are that of a pixel close to where the input is given.
-
-                         */
-
-                        System.out.println("ImageView Height: " + PRIMARY_IMAGE_VIEW_HEIGHT);
-                        System.out.println("ImageView Width: " + PRIMARY_IMAGE_VIEW_WIDTH);
-
-                        System.out.println("Bitmap Height: " + BITMAP_IMAGE_VIEW_HEIGHT);
-                        System.out.println("Bitmap Width: " + BITMAP_IMAGE_VIEW_WIDTH);
-
-
-                        float widthRatio = (float) BITMAP_IMAGE_VIEW_WIDTH / (float) PRIMARY_IMAGE_VIEW_WIDTH;
-                        float heightRatio = (float) BITMAP_IMAGE_VIEW_HEIGHT / (float) PRIMARY_IMAGE_VIEW_HEIGHT;
-
-                        int X_Image = (int) (x * widthRatio);
-                        int Y_Image = (int) (y * heightRatio);
-
-                        System.out.println("widthRatio: " + widthRatio);
-                        System.out.println("heightRatio: " + heightRatio);
-
-                        System.out.println("User pressed at: (" + Math.round(x) + ", " + Math.round(y) + ")");
-                        System.out.println("SCALED COORDS: (" + X_Image + ", " + Y_Image + ")");
+                        System.out.println("Get colors of: (" + X_Image + ", " + Y_Image + ")");
 
                         if (X_Image <= BITMAP_IMAGE_VIEW_WIDTH && Y_Image <= BITMAP_IMAGE_VIEW_HEIGHT ) {
-                            getColorInfo(v, X_Image, Y_Image);
+                            getColorInfo(v, X_Image,Y_Image);
                         } else {
                             Toast.makeText(getApplicationContext(), "Touched outside of image.", Toast.LENGTH_SHORT).show();
                         }
 
                     } catch (Exception e) {
-                        Toast.makeText(getApplicationContext(), String.format("Coordinates not on image: (%.0f, %.0f)", x, y), Toast.LENGTH_LONG).show();
+
                     }
                 }
                 return false;
             }
         });
+    }
+
+    /*
+        After spending more time on trying to properly scale coordinates than
+        anything else in this project we turned to the internet.
+        The getPointerCoords method was found here:
+        http://stackoverflow.com/a/9945896
+        posted by user akonsu
+     */
+    final float[] getPointerCoords(ImageView view, MotionEvent e)
+    {
+        final int index = e.getActionIndex();
+        final float[] coords = new float[] { e.getX(index), e.getY(index) };
+        Matrix matrix = new Matrix();
+        view.getImageMatrix().invert(matrix);
+        matrix.postTranslate(view.getScrollX(), view.getScrollY());
+        matrix.mapPoints(coords);
+        return coords;
     }
 
     public boolean onTouchEvent(MotionEvent e) {
@@ -296,17 +297,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    //causes more problems than it fixes
-    private void resizeImageView(View v, int height, int width){
-        v.requestLayout();
-
-        v.getLayoutParams().height = height;
-       // v.getLayoutParams().width = width;
-
-        PRIMARY_IMAGE_VIEW_WIDTH = v.getWidth();
-        PRIMARY_IMAGE_VIEW_HEIGHT = v.getHeight();
-    }
-
 
     private void getColorInfo( View v, int x, int y){
         ImageView imageView = ((ImageView)v);
@@ -315,16 +305,58 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("BITMAP SIZE w x h: " + bitmap.getHeight() + " x " + bitmap.getWidth());
 
        try {
-           int pixel = bitmap.getPixel(x, y);
+           int pixel = bitmap.getPixel(x, y); //touched pixel
 
            int red = Color.red(pixel);
            int green = Color.green(pixel);
            int blue = Color.blue(pixel);
 
+           //totals to be used for averaging
+           int redTotal = 0;
+           int greenTotal = 0;
+           int blueTotal = 0;
+
+           //square property setup for gathering pixel info
+           int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
+           int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
+           int offset = (int)Math.floor((float)squareWidth/2.0f);
+
+           System.out.println("Square width: " + squareWidth);
+           System.out.println("Number of pixels in square: " + numPixels);
+           System.out.println("offset: " + offset);
+
+           for (int i = x - offset; i < x + offset; i++) {
+
+               for (int j = y - offset; j < y + offset; j++) {
+
+                   //totalling the RGB values
+                   redTotal += Color.red(bitmap.getPixel(i,j));
+                   greenTotal += Color.green(bitmap.getPixel(i,j));
+                   blueTotal += Color.blue(bitmap.getPixel(i,j));
+
+               }
+           }
+
+           System.out.println("Red Total: " + redTotal + "   Green Total: " + greenTotal + "   Blue Total: " + blueTotal);
+
+           //calculating average values
+           int avgRed = redTotal/numPixels;
+           int avgGreen = greenTotal/numPixels;
+           int avgBlue = blueTotal/numPixels;
+
+           System.out.println("Average Red: " + avgRed);
+           System.out.println("Average Green: " + avgGreen);
+           System.out.println("Average Blue: " + avgBlue);
 
            System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
+           String testToast = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
+
+           //currently this is our only user output
+           Toast.makeText(getApplicationContext(), testToast, Toast.LENGTH_SHORT).show();
+
+
        } catch (Exception e){
-           System.out.println("EXCEPTION IN GETCOLORINFO");
+           System.out.println("EXCEPTION IN GETCOLORINFO.");
            e.printStackTrace();
        }
     }
