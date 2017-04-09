@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
     private static int BITMAP_IMAGE_VIEW_HEIGHT;
 
     private Uri mCurrentPhotoUri = null;
+    private ImageView imgView;
 
     private final String[] PERMISSIONS = {Manifest.permission.CAMERA,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
@@ -122,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        imgView = (ImageView) findViewById(R.id.primaryImage);
+
         if (savedInstanceState != null) {
             System.out.println("LOADING URI" );
 
@@ -129,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
 
             System.out.println("Reloading image.");
 
-            ImageView imgView = (ImageView) findViewById(R.id.primaryImage);
+
 
             Picasso
                     .with(imgView.getContext())
@@ -157,9 +160,9 @@ public class MainActivity extends AppCompatActivity {
 
     /* start touch functions */
     private void addTouchListener() {
-        ImageView image = (ImageView)findViewById(R.id.primaryImage);
+        imgView = (ImageView)findViewById(R.id.primaryImage);
 
-        image.setOnTouchListener(new View.OnTouchListener() {
+        imgView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
 
@@ -273,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         try {
-            ImageView imgView = (ImageView) findViewById(R.id.primaryImage);
+            imgView = (ImageView) findViewById(R.id.primaryImage);
             // When an Image is picked from gallery
             if (requestCode == RESULT_LOAD_IMG && resultCode == RESULT_OK && null != data) {
                 // Get the Image from data
