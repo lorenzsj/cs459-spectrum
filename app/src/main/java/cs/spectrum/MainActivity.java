@@ -16,6 +16,7 @@ import android.os.Environment;
 import android.os.Parcel;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
@@ -67,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
     private static int BITMAP_IMAGE_VIEW_WIDTH;
     private static int BITMAP_IMAGE_VIEW_HEIGHT;
 
-
     private Uri mCurrentPhotoUri = null;
 
     private final String[] PERMISSIONS = {Manifest.permission.CAMERA,
@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+
 
         super.onSaveInstanceState(outState);
     }
@@ -162,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
                         if (X_Image <= BITMAP_IMAGE_VIEW_WIDTH && Y_Image <= BITMAP_IMAGE_VIEW_HEIGHT ) {
                             getColorInfo(v, X_Image,Y_Image);
+
                         } else {
                             Toast.makeText(getApplicationContext(), "Touched outside of image.", Toast.LENGTH_SHORT).show();
                         }
@@ -174,7 +176,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
     /*
         After spending more time on trying to properly scale coordinates than
         anything else in this project we turned to the internet.
@@ -247,6 +248,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         try {
             ImageView imgView = (ImageView) findViewById(R.id.primaryImage);
             // When an Image is picked from gallery
@@ -361,11 +363,22 @@ public class MainActivity extends AppCompatActivity {
            System.out.println("Average Blue: " + avgBlue);
 
            System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
-           String testToast = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
+           String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
 
-           //currently this is our only user output
-           Toast.makeText(getApplicationContext(), testToast, Toast.LENGTH_SHORT).show();
+           final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
+                   Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
 
+           View snackBarView = alert.getView();
+           snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+
+           alert.setAction("Dismiss", new View.OnClickListener() {
+               @Override
+               public void onClick(View v) {
+                   alert.dismiss();
+               }
+           });
+
+           alert.show();
 
        } catch (Exception e){
            System.out.println("EXCEPTION IN GETCOLORINFO.");
