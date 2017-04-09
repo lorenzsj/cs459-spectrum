@@ -45,27 +45,35 @@
                 tools:visibility="visible"
                 android:background="@drawable/background" />
 
-            <ImageButton
-                android:id="@+id/cameraButton"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_gravity="bottom|center_horizontal"
-                android:background="@null"
-                android:scaleType="fitCenter"
-                app:layout_anchorGravity="bottom|center_horizontal"
-                app:srcCompat="@mipmap/polaroid"
-                android:adjustViewBounds="false" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginBottom="2dp">
 
-            <ImageButton
-                android:id="@+id/importButton"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_gravity="bottom|right"
-                android:layout_weight="1"
-                android:background="@null"
-                android:scaleType="fitCenter"
-                app:layout_anchorGravity="top|left"
-                app:srcCompat="@mipmap/image" />
+                <ImageButton
+                    android:id="@+id/cameraButton"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:background="@null"
+                    android:scaleType="fitCenter"
+                    app:layout_anchorGravity="bottom|center_horizontal"
+                    app:srcCompat="@mipmap/polaroid"
+                    android:adjustViewBounds="false" />
+
+                <ImageButton
+                    android:id="@+id/importButton"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="bottom|right"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:scaleType="fitCenter"
+                    app:layout_anchorGravity="top|left"
+                    app:srcCompat="@mipmap/image" />
+            </FrameLayout>
 
 
         </FrameLayout>
