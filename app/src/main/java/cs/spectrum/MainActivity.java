@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onSaveInstanceState(Bundle outState) {
 
+        outState.putParcelable("imageUri", mCurrentPhotoUri);
 
         super.onSaveInstanceState(outState);
     }
@@ -87,9 +88,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (savedInstanceState != null) {
 
-        }
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -123,6 +122,25 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        if (savedInstanceState != null) {
+            System.out.println("LOADING URI" );
+
+            mCurrentPhotoUri = savedInstanceState.getParcelable("imageUri");
+
+            System.out.println("Reloading image.");
+
+            ImageView imgView = (ImageView) findViewById(R.id.primaryImage);
+
+            Picasso
+                    .with(imgView.getContext())
+                    .load(mCurrentPhotoUri)
+                    .error(R.mipmap.ic_failed)
+                    .resize(DISPLAY_WIDTH,0)
+                    .onlyScaleDown()
+                    .into(imgView);
+
+            //reloadImage(mCurrentPhotoUri);
+        }
     }
 
     private void getDisplaySize(){
@@ -245,6 +263,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    public void reloadImage(Uri image){
+
+
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -266,6 +289,7 @@ public class MainActivity extends AppCompatActivity {
                         .onlyScaleDown()
                         .into(imgView);
 
+                mCurrentPhotoUri = selectedImage;
 
                 // When an image is taken from camera
             } else if (requestCode == RESULT_TAKE_PHOTO && resultCode == RESULT_OK){
@@ -318,72 +342,72 @@ public class MainActivity extends AppCompatActivity {
 
         System.out.println("BITMAP SIZE w x h: " + bitmap.getHeight() + " x " + bitmap.getWidth());
 
-       try {
-           int pixel = bitmap.getPixel(x, y); //touched pixel
+        try {
+            int pixel = bitmap.getPixel(x, y); //touched pixel
 
-           int red = Color.red(pixel);
-           int green = Color.green(pixel);
-           int blue = Color.blue(pixel);
+            int red = Color.red(pixel);
+            int green = Color.green(pixel);
+            int blue = Color.blue(pixel);
 
-           //totals to be used for averaging
-           int redTotal = 0;
-           int greenTotal = 0;
-           int blueTotal = 0;
+            //totals to be used for averaging
+            int redTotal = 0;
+            int greenTotal = 0;
+            int blueTotal = 0;
 
-           //square property setup for gathering pixel info
-           int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
-           int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
-           int offset = (int)Math.floor((float)squareWidth/2.0f);
+            //square property setup for gathering pixel info
+            int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
+            int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
+            int offset = (int)Math.floor((float)squareWidth/2.0f);
 
-           System.out.println("Square width: " + squareWidth);
-           System.out.println("Number of pixels in square: " + numPixels);
-           System.out.println("offset: " + offset);
+            System.out.println("Square width: " + squareWidth);
+            System.out.println("Number of pixels in square: " + numPixels);
+            System.out.println("offset: " + offset);
 
-           for (int i = x - offset; i < x + offset; i++) {
+            for (int i = x - offset; i < x + offset; i++) {
 
-               for (int j = y - offset; j < y + offset; j++) {
+                for (int j = y - offset; j < y + offset; j++) {
 
-                   //totalling the RGB values
-                   redTotal += Color.red(bitmap.getPixel(i,j));
-                   greenTotal += Color.green(bitmap.getPixel(i,j));
-                   blueTotal += Color.blue(bitmap.getPixel(i,j));
+                    //totalling the RGB values
+                    redTotal += Color.red(bitmap.getPixel(i,j));
+                    greenTotal += Color.green(bitmap.getPixel(i,j));
+                    blueTotal += Color.blue(bitmap.getPixel(i,j));
 
-               }
-           }
+                }
+            }
 
-           System.out.println("Red Total: " + redTotal + "   Green Total: " + greenTotal + "   Blue Total: " + blueTotal);
+            System.out.println("Red Total: " + redTotal + "   Green Total: " + greenTotal + "   Blue Total: " + blueTotal);
 
-           //calculating average values
-           int avgRed = redTotal/numPixels;
-           int avgGreen = greenTotal/numPixels;
-           int avgBlue = blueTotal/numPixels;
+            //calculating average values
+            int avgRed = redTotal/numPixels;
+            int avgGreen = greenTotal/numPixels;
+            int avgBlue = blueTotal/numPixels;
 
-           System.out.println("Average Red: " + avgRed);
-           System.out.println("Average Green: " + avgGreen);
-           System.out.println("Average Blue: " + avgBlue);
+            System.out.println("Average Red: " + avgRed);
+            System.out.println("Average Green: " + avgGreen);
+            System.out.println("Average Blue: " + avgBlue);
 
-           System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
-           String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
+            System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
+            String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
 
-           final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
-                   Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
+            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
+                    Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
 
-           View snackBarView = alert.getView();
-           snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+            View snackBarView = alert.getView();
+            snackBarView.setBackgroundColor(Color.parseColor("#313031"));
 
-           alert.setAction("Dismiss", new View.OnClickListener() {
-               @Override
-               public void onClick(View v) {
-                   alert.dismiss();
-               }
-           });
+            alert.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    alert.dismiss();
+                }
+            });
 
-           alert.show();
+            alert.show();
 
-       } catch (Exception e){
-           System.out.println("EXCEPTION IN GETCOLORINFO.");
-           e.printStackTrace();
-       }
+        } catch (Exception e){
+            System.out.println("EXCEPTION IN GETCOLORINFO.");
+            e.printStackTrace();
+        }
     }
 
     //returns a unique filename using a date-time stamp
