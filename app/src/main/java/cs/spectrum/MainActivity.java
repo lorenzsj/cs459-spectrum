@@ -39,6 +39,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import uk.co.senab.photoview.PhotoView;
+import uk.co.senab.photoview.PhotoViewAttacher;
+
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
 
@@ -46,14 +49,11 @@ public class MainActivity extends AppCompatActivity {
 
     /* start touch variables */
     private static final String DEBUG_TAG = "SJL";
-
     private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
-    /* end touch variables  */
+
 
     private static final int RESULT_TAKE_PHOTO = 1;
-
     private static final int RESULT_LOAD_IMG = 2;
-
     private static final int RESIZED_IMG_WIDTH = 1080;
 
     //pixel width and height of device
@@ -70,16 +70,15 @@ public class MainActivity extends AppCompatActivity {
 
     private Uri mCurrentPhotoUri = null;
     private ImageView imgView;
+    private PhotoViewAttacher mAttacher;
 
     private final String[] PERMISSIONS = {Manifest.permission.CAMERA,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
-
     private final int PERMISSION_ALL = 1; //value after request granted
 
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-
         outState.putParcelable("imageUri", mCurrentPhotoUri);
 
         super.onSaveInstanceState(outState);
@@ -89,13 +88,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
-
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        addTouchListener(); // stephen
 
         if (!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
@@ -124,6 +119,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         imgView = (ImageView) findViewById(R.id.primaryImage);
+        mAttacher = new PhotoViewAttacher(imgView);
+        mAttacher.update();
+
+        //addTouchListener(); // stephen
 
         if (savedInstanceState != null) {
             System.out.println("LOADING URI" );
@@ -131,8 +130,6 @@ public class MainActivity extends AppCompatActivity {
             mCurrentPhotoUri = savedInstanceState.getParcelable("imageUri");
 
             System.out.println("Reloading image.");
-
-
 
             Picasso
                     .with(imgView.getContext())
@@ -197,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
     /*
         After spending more time on trying to properly scale coordinates than
         anything else in this project we turned to the internet.
@@ -228,7 +226,6 @@ public class MainActivity extends AppCompatActivity {
     }
     /* end touch functions */
 
-
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         // Ensure that there's a camera activity to handle the intent
@@ -256,19 +253,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     public void loadImageFromGallery(View view) {
         // Create intent to Open Image applications like Gallery, Google Photos
         Intent galleryIntent = new Intent(Intent.ACTION_PICK,
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         // Start the Intent
         startActivityForResult(galleryIntent, RESULT_LOAD_IMG);
-    }
-
-
-    public void reloadImage(Uri image){
-
-
     }
 
     @Override
@@ -323,7 +313,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Something went wrong.", Toast.LENGTH_LONG)
                     .show();
         }
-
     }
 
     private void getBitmapSize( View v ) {
@@ -335,7 +324,6 @@ public class MainActivity extends AppCompatActivity {
 
         System.out.println("Bitmap Height: " + BITMAP_IMAGE_VIEW_HEIGHT);
         System.out.println("Bitmap Width: " + BITMAP_IMAGE_VIEW_WIDTH);
-
     }
 
 
