@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcel;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
@@ -75,23 +76,33 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState != null) {
+
+        }
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         addTouchListener(); // stephen
 
-
-        ImageButton cameraButton = (ImageButton) findViewById(R.id.cameraButton);
-        ImageButton importButton = (ImageButton) findViewById(R.id.importButton);
-
         if (!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
 
         getDisplaySize();
+
+        ImageButton cameraButton = (ImageButton) findViewById(R.id.cameraButton);
+        ImageButton importButton = (ImageButton) findViewById(R.id.importButton);
 
         //cameraButton listener
         cameraButton.setOnClickListener( new View.OnClickListener() {
@@ -240,6 +251,7 @@ public class MainActivity extends AppCompatActivity {
             // When an Image is picked from gallery
             if (requestCode == RESULT_LOAD_IMG && resultCode == RESULT_OK && null != data) {
                 // Get the Image from data
+
                 Uri selectedImage = data.getData();
 
                 // Set the Image in ImageView after resizing if too large
