@@ -227,8 +227,6 @@ public class MainActivity extends AppCompatActivity {
     /* test 123 */
 
 
-
-
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem zoomToggle = menu.findItem(R.id.menu_zoom_toggle);
