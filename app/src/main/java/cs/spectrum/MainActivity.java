@@ -1,5 +1,6 @@
 package cs.spectrum;
 
+import cs.spectrum.R;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
@@ -7,43 +8,51 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Matrix;
-import android.graphics.Point;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Parcel;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
+import android.util.Log;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.util.Log;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Random;
 
-import uk.co.senab.photoview.PhotoView;
+
+import cs.spectrum.BuildConfig;
+
 import uk.co.senab.photoview.PhotoViewAttacher;
+import uk.co.senab.photoview.PhotoViewAttacher.OnMatrixChangedListener;
+import uk.co.senab.photoview.PhotoViewAttacher.OnPhotoTapListener;
 
 import static android.os.Environment.getExternalStoragePublicDirectory;
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -70,33 +79,57 @@ public class MainActivity extends AppCompatActivity {
 
     private Uri mCurrentPhotoUri = null;
     private ImageView imgView;
+
+    //value after request granted
+
+    /////////////////////////////////
+
+    static final String PHOTO_TAP_TOAST_STRING = "Photo Tap! X: %.2f %% Y:%.2f %% ID: %d";
+    static final String SCALE_TOAST_STRING = "Scaled to: %.2ff";
+    static final String FLING_LOG_STRING = "Fling velocityX: %.2f, velocityY: %.2f";
+
+    private TextView mCurrMatrixTv;
+
     private PhotoViewAttacher mAttacher;
 
+    private Toast mCurrentToast;
+
+    private Matrix mCurrentDisplayMatrix = null;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
     private final String[] PERMISSIONS = {Manifest.permission.CAMERA,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
-    private final int PERMISSION_ALL = 1; //value after request granted
-
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelable("imageUri", mCurrentPhotoUri);
-
-        super.onSaveInstanceState(outState);
-    }
+    private final int PERMISSION_ALL = 1;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         if (!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
 
-        getDisplaySize();
+
+        ImageView mImageView = (ImageView) findViewById(R.id.primaryImage);
+        mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
+
+        //Drawable bitmap = ContextCompat.getDrawable(this, R.drawable.wallpaper);
+        //mImageView.setImageDrawable(bitmap);
+
+        // The MAGIC happens here!
+        mAttacher = new PhotoViewAttacher(mImageView);
+
+        // Lets attach some listeners, not required though!
+        mAttacher.setOnMatrixChangeListener(new MatrixChangeListener());
+        mAttacher.setOnPhotoTapListener(new PhotoTapListener());
+        mAttacher.setOnSingleFlingListener(new SingleFlingListener());
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
         ImageButton cameraButton = (ImageButton) findViewById(R.id.cameraButton);
         ImageButton importButton = (ImageButton) findViewById(R.id.importButton);
@@ -104,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         //cameraButton listener
         cameraButton.setOnClickListener( new View.OnClickListener() {
             @Override
-            public void onClick( View view ) {
+            public void onClick(View view) {
                 dispatchTakePictureIntent();
             }
         });
@@ -112,120 +145,287 @@ public class MainActivity extends AppCompatActivity {
         //import button listener
         importButton.setOnClickListener( new View.OnClickListener() {
             @Override
-            public void onClick( View view ) {
-                loadImageFromGallery( view );
+            public void onClick(View view) {
+                loadImageFromGallery(view);
             }
 
         });
+    }
 
-        imgView = (ImageView) findViewById(R.id.primaryImage);
-        mAttacher = new PhotoViewAttacher(imgView);
-        mAttacher.update();
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
-        //addTouchListener(); // stephen
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
 
-        if (savedInstanceState != null) {
-            System.out.println("LOADING URI" );
+        // Need to call clean-up
+        mAttacher.cleanup();
+    }
 
-            mCurrentPhotoUri = savedInstanceState.getParcelable("imageUri");
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem zoomToggle = menu.findItem(R.id.menu_zoom_toggle);
+        assert null != zoomToggle;
+        zoomToggle.setTitle(mAttacher.canZoom() ? R.string.menu_zoom_disable : R.string.menu_zoom_enable);
 
-            System.out.println("Reloading image.");
+        return super.onPrepareOptionsMenu(menu);
+    }
 
-            Picasso
-                    .with(imgView.getContext())
-                    .load(mCurrentPhotoUri)
-                    .error(R.mipmap.ic_failed)
-                    .resize(DISPLAY_WIDTH,0)
-                    .onlyScaleDown()
-                    .into(imgView);
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_zoom_toggle:
+                mAttacher.setZoomable(!mAttacher.canZoom());
+                return true;
 
-            //reloadImage(mCurrentPhotoUri);
+            case R.id.menu_scale_fit_center:
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
+                return true;
+
+            case R.id.menu_scale_fit_start:
+                mAttacher.setScaleType(ScaleType.FIT_START);
+                return true;
+
+            case R.id.menu_scale_fit_end:
+                mAttacher.setScaleType(ScaleType.FIT_END);
+                return true;
+
+            case R.id.menu_scale_fit_xy:
+                mAttacher.setScaleType(ScaleType.FIT_XY);
+                return true;
+
+            case R.id.menu_scale_scale_center:
+                mAttacher.setScaleType(ScaleType.CENTER);
+                return true;
+
+            case R.id.menu_scale_scale_center_crop:
+                mAttacher.setScaleType(ScaleType.CENTER_CROP);
+                return true;
+
+            case R.id.menu_scale_scale_center_inside:
+                mAttacher.setScaleType(ScaleType.CENTER_INSIDE);
+                return true;
+
+            case R.id.menu_scale_random_animate:
+            case R.id.menu_scale_random:
+                Random r = new Random();
+
+                float minScale = mAttacher.getMinimumScale();
+                float maxScale = mAttacher.getMaximumScale();
+                float randomScale = minScale + (r.nextFloat() * (maxScale - minScale));
+                mAttacher.setScale(randomScale, item.getItemId() == R.id.menu_scale_random_animate);
+
+                showToast(String.format(SCALE_TOAST_STRING, randomScale));
+
+                return true;
+            case R.id.menu_matrix_restore:
+                if (mCurrentDisplayMatrix == null)
+                    showToast("You need to capture display matrix first");
+                else
+                    mAttacher.setDisplayMatrix(mCurrentDisplayMatrix);
+                return true;
+            case R.id.menu_matrix_capture:
+                mCurrentDisplayMatrix = new Matrix();
+                mAttacher.getDisplayMatrix(mCurrentDisplayMatrix);
+                return true;
+            case R.id.extract_visible_bitmap:
+                try {
+                    Bitmap bmp = mAttacher.getVisibleRectangleBitmap();
+                    File tmpFile = File.createTempFile("photoview", ".png",
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
+                    FileOutputStream out = new FileOutputStream(tmpFile);
+                    bmp.compress(Bitmap.CompressFormat.PNG, 90, out);
+                    out.close();
+                    Intent share = new Intent(Intent.ACTION_SEND);
+                    share.setType("image/png");
+                    share.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(tmpFile));
+                    startActivity(share);
+                    Toast.makeText(this, String.format("Extracted into: %s", tmpFile.getAbsolutePath()), Toast.LENGTH_SHORT).show();
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                    Toast.makeText(this, "Error occured while extracting bitmap", Toast.LENGTH_SHORT).show();
+                }
+                return true;
         }
+
+        return super.onOptionsItemSelected(item);
     }
 
-    private void getDisplaySize(){
-        Display display = getWindowManager().getDefaultDisplay();
-        Point size = new Point();
-
-        display.getSize(size);
-
-        DISPLAY_WIDTH = size.x;
-        DISPLAY_HEIGHT = size.y;
-
-        System.out.println("Display width x height: " + DISPLAY_WIDTH + " x " + DISPLAY_HEIGHT);
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("SimpleSample Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
     }
 
-    /* start touch functions */
-    private void addTouchListener() {
-        imgView = (ImageView)findViewById(R.id.primaryImage);
+    @Override
+    public void onStart() {
+        super.onStart();
 
-        imgView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        AppIndex.AppIndexApi.start(client, getIndexApiAction());
+    }
 
-                if (event.getAction() == MotionEvent.ACTION_UP) { //only runs the following code when finger is lifted
-                    try {
+    @Override
+    public void onStop() {
+        super.onStop();
 
-                        ImageView image = (ImageView)findViewById(R.id.primaryImage);
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction());
+        client.disconnect();
+    }
 
-                        float[] coord = getPointerCoords(image,event);
+    private class PhotoTapListener implements OnPhotoTapListener {
 
-                        System.out.println(coord[0] + ", " + coord[1]);
+        @Override
+        public void onPhotoTap(View view, float x, float y) {
+            float xPercentage = x * 100f;
+            float yPercentage = y * 100f;
 
-                        int X_Image = Math.round(coord[0]);
-                        int Y_Image = Math.round(coord[1]);
+            showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
+            //getColorInfo(view, );
 
-                        getBitmapSize(v);
+            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), "color here",
+                    Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
 
-                        System.out.println("Get colors of: (" + X_Image + ", " + Y_Image + ")");
+            View snackBarView = alert.getView();
+            snackBarView.setBackgroundColor(Color.parseColor("#313031"));
 
-                        if (X_Image <= BITMAP_IMAGE_VIEW_WIDTH && Y_Image <= BITMAP_IMAGE_VIEW_HEIGHT ) {
-                            getColorInfo(v, X_Image,Y_Image);
+            alert.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    alert.dismiss();
+                }
+            });
 
-                        } else {
-                            Toast.makeText(getApplicationContext(), "Touched outside of image.", Toast.LENGTH_SHORT).show();
-                        }
+            alert.show();
+        }
 
-                    } catch (Exception e) {
+        private void getColorInfo( View v, int x, int y){
+            ImageView imageView = ((ImageView)v);
+            Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+
+            System.out.println("BITMAP SIZE w x h: " + bitmap.getHeight() + " x " + bitmap.getWidth());
+
+            try {
+                int pixel = bitmap.getPixel(x, y); //touched pixel
+
+                int red = Color.red(pixel);
+                int green = Color.green(pixel);
+                int blue = Color.blue(pixel);
+
+                //totals to be used for averaging
+                int redTotal = 0;
+                int greenTotal = 0;
+                int blueTotal = 0;
+
+                //square property setup for gathering pixel info
+                int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
+                int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
+                int offset = (int)Math.floor((float)squareWidth/2.0f);
+
+                System.out.println("Square width: " + squareWidth);
+                System.out.println("Number of pixels in square: " + numPixels);
+                System.out.println("offset: " + offset);
+
+                for (int i = x - offset; i < x + offset; i++) {
+
+                    for (int j = y - offset; j < y + offset; j++) {
+
+                        //totalling the RGB values
+                        redTotal += Color.red(bitmap.getPixel(i,j));
+                        greenTotal += Color.green(bitmap.getPixel(i,j));
+                        blueTotal += Color.blue(bitmap.getPixel(i,j));
 
                     }
                 }
-                return false;
+
+                System.out.println("Red Total: " + redTotal + "   Green Total: " + greenTotal + "   Blue Total: " + blueTotal);
+
+                //calculating average values
+                int avgRed = redTotal/numPixels;
+                int avgGreen = greenTotal/numPixels;
+                int avgBlue = blueTotal/numPixels;
+
+                System.out.println("Average Red: " + avgRed);
+                System.out.println("Average Green: " + avgGreen);
+                System.out.println("Average Blue: " + avgBlue);
+
+                System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
+                String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
+
+                final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
+                        Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
+
+                View snackBarView = alert.getView();
+                snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+
+                alert.setAction("Dismiss", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        alert.dismiss();
+                    }
+                });
+
+                alert.show();
+
+            } catch (Exception e){
+                System.out.println("EXCEPTION IN GETCOLORINFO.");
+                e.printStackTrace();
             }
-        });
-    }
-
-    /*
-        After spending more time on trying to properly scale coordinates than
-        anything else in this project we turned to the internet.
-        The getPointerCoords method was found here:
-        http://stackoverflow.com/a/9945896
-        posted by user akonsu
-     */
-    final float[] getPointerCoords(ImageView view, MotionEvent e)
-    {
-        final int index = e.getActionIndex();
-        final float[] coords = new float[] { e.getX(index), e.getY(index) };
-        Matrix matrix = new Matrix();
-        view.getImageMatrix().invert(matrix);
-        matrix.postTranslate(view.getScrollX(), view.getScrollY());
-        matrix.mapPoints(coords);
-        return coords;
-    }
-
-    public boolean onTouchEvent(MotionEvent e) {
-        float x = e.getX();
-        float y = e.getY();
-
-        switch (e.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                System.out.print("Pressed");
         }
 
-        return true;
+        @Override
+        public void onOutsidePhotoTap() {
+            showToast("You have a tap event on the place where out of the photo.");
+        }
     }
-    /* end touch functions */
 
+    private void showToast(CharSequence text) {
+        if (null != mCurrentToast) {
+            mCurrentToast.cancel();
+        }
+
+        mCurrentToast = Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT);
+        mCurrentToast.show();
+    }
+
+    private class MatrixChangeListener implements OnMatrixChangedListener {
+
+        @Override
+        public void onMatrixChanged(RectF rect) {
+            mCurrMatrixTv.setText(rect.toString());
+        }
+    }
+
+    private class SingleFlingListener implements PhotoViewAttacher.OnSingleFlingListener {
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            if (BuildConfig.DEBUG) {
+                Log.d("PhotoView", String.format(FLING_LOG_STRING, velocityX, velocityY));
+            }
+            return true;
+        }
+    }
+
+    /* Spectrum */
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         // Ensure that there's a camera activity to handle the intent
@@ -253,152 +453,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     public void loadImageFromGallery(View view) {
         // Create intent to Open Image applications like Gallery, Google Photos
         Intent galleryIntent = new Intent(Intent.ACTION_PICK,
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         // Start the Intent
         startActivityForResult(galleryIntent, RESULT_LOAD_IMG);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        try {
-            imgView = (ImageView) findViewById(R.id.primaryImage);
-            // When an Image is picked from gallery
-            if (requestCode == RESULT_LOAD_IMG && resultCode == RESULT_OK && null != data) {
-                // Get the Image from data
-
-                Uri selectedImage = data.getData();
-
-                // Set the Image in ImageView after resizing if too large
-                Picasso
-                        .with(imgView.getContext())
-                        .load(selectedImage)
-                        .error(R.mipmap.ic_failed)
-                        .resize(DISPLAY_WIDTH,0)
-                        .onlyScaleDown()
-                        .into(imgView);
-
-                mCurrentPhotoUri = selectedImage;
-
-                // When an image is taken from camera
-            } else if (requestCode == RESULT_TAKE_PHOTO && resultCode == RESULT_OK){
-                // Set the Image in ImageView after resizing if too large
-                Picasso
-                        .with(imgView.getContext())
-                        .load(mCurrentPhotoUri)
-                        .error(R.mipmap.ic_failed)
-                        .rotate(90)
-                        .resize(DISPLAY_WIDTH,0)
-                        .onlyScaleDown()
-                        .into(imgView);
-
-
-            } else {
-                Toast.makeText(this, "You haven't selected an image.",
-                        Toast.LENGTH_LONG).show();
-            }
-
-            PRIMARY_IMAGE_VIEW_HEIGHT = imgView.getHeight();
-            PRIMARY_IMAGE_VIEW_WIDTH = imgView.getWidth();
-
-        } catch (Exception e) {
-            System.out.println("******************************************************");
-            e.printStackTrace();
-            System.out.println("******************************************************");
-
-            Toast.makeText(this, "Something went wrong.", Toast.LENGTH_LONG)
-                    .show();
-        }
-    }
-
-    private void getBitmapSize( View v ) {
-        ImageView imageView = ((ImageView) v);
-        Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
-
-        BITMAP_IMAGE_VIEW_HEIGHT = bitmap.getHeight();
-        BITMAP_IMAGE_VIEW_WIDTH = bitmap.getWidth();
-
-        System.out.println("Bitmap Height: " + BITMAP_IMAGE_VIEW_HEIGHT);
-        System.out.println("Bitmap Width: " + BITMAP_IMAGE_VIEW_WIDTH);
-    }
-
-
-    private void getColorInfo( View v, int x, int y){
-        ImageView imageView = ((ImageView)v);
-        Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
-
-        System.out.println("BITMAP SIZE w x h: " + bitmap.getHeight() + " x " + bitmap.getWidth());
-
-        try {
-            int pixel = bitmap.getPixel(x, y); //touched pixel
-
-            int red = Color.red(pixel);
-            int green = Color.green(pixel);
-            int blue = Color.blue(pixel);
-
-            //totals to be used for averaging
-            int redTotal = 0;
-            int greenTotal = 0;
-            int blueTotal = 0;
-
-            //square property setup for gathering pixel info
-            int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
-            int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
-            int offset = (int)Math.floor((float)squareWidth/2.0f);
-
-            System.out.println("Square width: " + squareWidth);
-            System.out.println("Number of pixels in square: " + numPixels);
-            System.out.println("offset: " + offset);
-
-            for (int i = x - offset; i < x + offset; i++) {
-
-                for (int j = y - offset; j < y + offset; j++) {
-
-                    //totalling the RGB values
-                    redTotal += Color.red(bitmap.getPixel(i,j));
-                    greenTotal += Color.green(bitmap.getPixel(i,j));
-                    blueTotal += Color.blue(bitmap.getPixel(i,j));
-
-                }
-            }
-
-            System.out.println("Red Total: " + redTotal + "   Green Total: " + greenTotal + "   Blue Total: " + blueTotal);
-
-            //calculating average values
-            int avgRed = redTotal/numPixels;
-            int avgGreen = greenTotal/numPixels;
-            int avgBlue = blueTotal/numPixels;
-
-            System.out.println("Average Red: " + avgRed);
-            System.out.println("Average Green: " + avgGreen);
-            System.out.println("Average Blue: " + avgBlue);
-
-            System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
-            String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
-
-            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
-                    Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
-
-            View snackBarView = alert.getView();
-            snackBarView.setBackgroundColor(Color.parseColor("#313031"));
-
-            alert.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    alert.dismiss();
-                }
-            });
-
-            alert.show();
-
-        } catch (Exception e){
-            System.out.println("EXCEPTION IN GETCOLORINFO.");
-            e.printStackTrace();
-        }
     }
 
     //returns a unique filename using a date-time stamp
@@ -429,37 +490,59 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    //currently unused from default activity
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        try {
+            ImageView mImageView = (ImageView) findViewById(R.id.primaryImage);
+            // When an Image is picked from gallery
+            //requestCode == RESULT_LOAD_IMG && resultCode == RESULT_OK &&
+            if (null != data) {
+                Uri selectedImage = data.getData();
+                mImageView.setImageURI(selectedImage);
+            }
+
+            // Get the Image from data
+                /*
+
+else if (requestCode == RESULT_TAKE_PHOTO && resultCode == RESULT_OK){
+                // Set the Image in ImageView after resizing if too large
 
 
-    //currently unused from default activity
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_Hide_Buttons) {
-            ImageButton cameraButton = (ImageButton)findViewById(R.id.cameraButton);
-            ImageButton importButton = (ImageButton)findViewById(R.id.importButton);
+            }
+                // Set the Image in ImageView after resizing if too large
+                Picasso
+                        .with(imgView.getContext())
+                        .load(selectedImage)
+                        .error(R.mipmap.ic_failed)
+                        .resize(DISPLAY_WIDTH,0)
+                        .onlyScaleDown()
+                        .into(imgView);
 
-            cameraButton.setVisibility(View.GONE);
-            importButton.setVisibility(View.GONE);
-        } else if (id == R.id.action_Show_Buttons) {
-            ImageButton cameraButton = (ImageButton)findViewById(R.id.cameraButton);
-            ImageButton importButton = (ImageButton)findViewById(R.id.importButton);
+                mCurrentPhotoUri = selectedImage;
 
-            cameraButton.setVisibility(View.VISIBLE);
-            importButton.setVisibility(View.VISIBLE);
+                // When an image is taken from camera
+
+
+
+                        */
+            else {
+                Toast.makeText(this, "You haven't selected an image.",
+                        Toast.LENGTH_LONG).show();
+            }
+        /*
+            PRIMARY_IMAGE_VIEW_HEIGHT = imgView.getHeight();
+            PRIMARY_IMAGE_VIEW_WIDTH = imgView.getWidth();
+            */
+
+        } catch (Exception e) {
+            System.out.println("******************************************************");
+            e.printStackTrace();
+            System.out.println("******************************************************");
+
+            Toast.makeText(this, "Something went wrong.", Toast.LENGTH_LONG)
+                    .show();
         }
-
-        return super.onOptionsItemSelected(item);
     }
 }
