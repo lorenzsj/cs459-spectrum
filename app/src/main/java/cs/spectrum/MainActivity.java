@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
             float xPercentage = x * 100f;
             float yPercentage = y * 100f;
 
-            //showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
+            showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
             //getColorInfo(view, );
 
             final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), "color here",
@@ -193,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onOutsidePhotoTap() {
-            //showToast("You have a tap event on the place where out of the photo.");
+            showToast("You have a tap event on the place where out of the photo.");
         }
     }
 
@@ -250,7 +250,26 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        ImageButton cameraButton;
+        ImageButton importButton;
+
         switch (item.getItemId()) {
+            case R.id.action_Hide_Buttons:
+                 cameraButton = (ImageButton)findViewById(R.id.cameraButton);
+                 importButton = (ImageButton)findViewById(R.id.importButton);
+
+                cameraButton.setVisibility(View.GONE);
+                importButton.setVisibility(View.GONE);
+                return true;
+
+            case R.id.action_Show_Buttons:
+                cameraButton = (ImageButton)findViewById(R.id.cameraButton);
+                importButton = (ImageButton)findViewById(R.id.importButton);
+
+                cameraButton.setVisibility(View.VISIBLE);
+                importButton.setVisibility(View.VISIBLE);
+                return true;
+
             case R.id.menu_zoom_toggle:
                 mAttacher.setZoomable(!mAttacher.canZoom());
                 return true;
@@ -292,7 +311,7 @@ public class MainActivity extends AppCompatActivity {
                 float randomScale = minScale + (r.nextFloat() * (maxScale - minScale));
                 mAttacher.setScale(randomScale, item.getItemId() == R.id.menu_scale_random_animate);
 
-                //showToast(String.format(SCALE_TOAST_STRING, randomScale));
+                showToast(String.format(SCALE_TOAST_STRING, randomScale));
 
                 return true;
             case R.id.menu_matrix_restore:
