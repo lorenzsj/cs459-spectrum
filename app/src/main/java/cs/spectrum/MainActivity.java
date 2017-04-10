@@ -66,7 +66,6 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
  */
 
 public class MainActivity extends AppCompatActivity {
-
     /* start touch variables */
     private static final String DEBUG_TAG = "SJL";
     private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
@@ -146,6 +145,31 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+
+        photoView = (PhotoView) findViewById(R.id.primaryImage);
+
+        if (savedInstanceState != null) {
+            System.out.println("LOADING URI" );
+
+            mCurrentPhotoUri = savedInstanceState.getParcelable("imageUri");
+
+            System.out.println("Reloading image.");
+
+            Picasso
+                    .with(photoView.getContext())
+                    .load(mCurrentPhotoUri)
+                    .error(R.mipmap.ic_failed)
+                    .resize(DISPLAY_WIDTH,0)
+                    .onlyScaleDown()
+                    .into(photoView);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable("imageUri", mCurrentPhotoUri);
+
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -329,7 +353,6 @@ public class MainActivity extends AppCompatActivity {
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 startActivityForResult(takePictureIntent, RESULT_TAKE_PHOTO);
                 System.out.println("Picture taken.");
-
             }
         }
     }
@@ -426,5 +449,79 @@ public class MainActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
+    }
+
+    private void getColorInfo( View v, int x, int y){
+        ImageView imageView = ((ImageView)v);
+        Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+
+        System.out.println("BITMAP SIZE w x h: " + bitmap.getHeight() + " x " + bitmap.getWidth());
+
+        try {
+            int pixel = bitmap.getPixel(x, y); //touched pixel
+
+            int red = Color.red(pixel);
+            int green = Color.green(pixel);
+            int blue = Color.blue(pixel);
+
+            //totals to be used for averaging
+            int redTotal = 0;
+            int greenTotal = 0;
+            int blueTotal = 0;
+
+            //square property setup for gathering pixel info
+            int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
+            int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
+            int offset = (int)Math.floor((float)squareWidth/2.0f);
+
+            System.out.println("Square width: " + squareWidth);
+            System.out.println("Number of pixels in square: " + numPixels);
+            System.out.println("offset: " + offset);
+
+            for (int i = x - offset; i < x + offset; i++) {
+
+                for (int j = y - offset; j < y + offset; j++) {
+
+                    //totalling the RGB values
+                    redTotal += Color.red(bitmap.getPixel(i,j));
+                    greenTotal += Color.green(bitmap.getPixel(i,j));
+                    blueTotal += Color.blue(bitmap.getPixel(i,j));
+
+                }
+            }
+
+            System.out.println("Red Total: " + redTotal + "   Green Total: " + greenTotal + "   Blue Total: " + blueTotal);
+
+            //calculating average values
+            int avgRed = redTotal/numPixels;
+            int avgGreen = greenTotal/numPixels;
+            int avgBlue = blueTotal/numPixels;
+
+            System.out.println("Average Red: " + avgRed);
+            System.out.println("Average Green: " + avgGreen);
+            System.out.println("Average Blue: " + avgBlue);
+
+            System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
+            String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
+
+            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
+                    Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
+
+            View snackBarView = alert.getView();
+            snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+
+            alert.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    alert.dismiss();
+                }
+            });
+
+            alert.show();
+
+        } catch (Exception e){
+            System.out.println("EXCEPTION IN GETCOLORINFO.");
+            e.printStackTrace();
+        }
     }
 }
