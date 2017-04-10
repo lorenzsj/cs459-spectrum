@@ -34,30 +34,42 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
 import android.widget.ImageView.ScaleType;
-
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.squareup.picasso.Picasso;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
-
 import uk.co.senab.photoview.PhotoView;
 import uk.co.senab.photoview.PhotoViewAttacher;
 import uk.co.senab.photoview.PhotoViewAttacher.OnMatrixChangedListener;
 import uk.co.senab.photoview.PhotoViewAttacher.OnPhotoTapListener;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
+/**
+ * There are several instances of 'dead' code within this activity. That being said, it is best to
+ * leave them alone for now as it may break the application. A quick and dirty implementation of the
+ * PhotoView library did not assess or provide solutions to conflicting code.
+ *
+ * TODO:
+ *  1. Line 161    - Implement Color Stealer
+ *  2. Line 354-74 - Picasso should be looked at if possible. It seems fine after using the
+ *                   PhotoView class *1
+ *
+ * Notes:
+ * *1: https://github.com/chrisbanes/PhotoView/blob/10e13fd761084dcbceb5245b7b5bfb6903f11e5d/sample/src/main/java/uk/co/senab/photoview/sample/PicassoSampleActivity.java
+ *
+ * @author Stephen Lorenz
+ * @author Travis Davey
+ */
 
 public class MainActivity extends AppCompatActivity {
 
     /* start touch variables */
     private static final String DEBUG_TAG = "SJL";
     private final float TOUCH_SCALE_FACTOR = 180.0f / 320;
-
 
     private static final int RESULT_TAKE_PHOTO = 1;
     private static final int RESULT_LOAD_IMG = 2;
@@ -78,30 +90,17 @@ public class MainActivity extends AppCompatActivity {
     private Uri mCurrentPhotoUri = null;
     private PhotoView photoView;
 
-    //value after request granted
-
-    /////////////////////////////////
-
     static final String PHOTO_TAP_TOAST_STRING = "Photo Tap! X: %.2f %% Y:%.2f %% ID: %d";
     static final String SCALE_TOAST_STRING = "Scaled to: %.2ff";
     static final String FLING_LOG_STRING = "Fling velocityX: %.2f, velocityY: %.2f";
 
     private TextView mCurrMatrixTv;
-
     private PhotoViewAttacher mAttacher;
-
     private Toast mCurrentToast;
-
     private Matrix mCurrentDisplayMatrix = null;
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
     private final String[] PERMISSIONS = {Manifest.permission.CAMERA,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
     private final int PERMISSION_ALL = 1;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,19 +120,12 @@ public class MainActivity extends AppCompatActivity {
         PhotoView mImageView = (PhotoView) findViewById(R.id.primaryImage);
         mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
 
-        //Drawable bitmap = ContextCompat.getDrawable(this, R.drawable.wallpaper);
-        //mImageView.setImageDrawable(bitmap);
-
         // The MAGIC happens here!
         mAttacher = new PhotoViewAttacher(mImageView);
 
-        // Lets attach some listeners, not required though!
         mAttacher.setOnMatrixChangeListener(new MatrixChangeListener());
         mAttacher.setOnPhotoTapListener(new PhotoTapListener());
         mAttacher.setOnSingleFlingListener(new SingleFlingListener());
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        //client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
         ImageButton cameraButton = (ImageButton) findViewById(R.id.cameraButton);
         ImageButton importButton = (ImageButton) findViewById(R.id.importButton);
@@ -160,11 +152,9 @@ public class MainActivity extends AppCompatActivity {
     public void onDestroy() {
         super.onDestroy();
 
-        // Need to call clean-up
         mAttacher.cleanup();
     }
 
-    /* test 123 */
     private class PhotoTapListener implements OnPhotoTapListener {
 
         @Override
@@ -173,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
             float yPercentage = y * 100f;
 
             showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
-            //getColorInfo(view, );
+            //get color info here
 
             final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), "color here",
                     Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
@@ -193,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onOutsidePhotoTap() {
-            showToast("You have a tap event on the place where out of the photo.");
+            showToast("Please tap within the image.");
         }
     }
 
@@ -224,8 +214,6 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
     }
-    /* test 123 */
-
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
@@ -314,39 +302,6 @@ public class MainActivity extends AppCompatActivity {
                 showToast(String.format(SCALE_TOAST_STRING, randomScale));
 
                 return true;
-
-            /* it's dead, jim
-            case R.id.menu_matrix_restore:
-                if (mCurrentDisplayMatrix == null) {}
-                    //showToast("You need to capture display matrix first");
-                else
-                    mAttacher.setDisplayMatrix(mCurrentDisplayMatrix);
-                return true;
-
-
-            case R.id.menu_matrix_capture:
-                mCurrentDisplayMatrix = new Matrix();
-                mAttacher.getDisplayMatrix(mCurrentDisplayMatrix);
-                return true;
-            case R.id.extract_visible_bitmap:
-                try {
-                    Bitmap bmp = mAttacher.getVisibleRectangleBitmap();
-                    File tmpFile = File.createTempFile("photoview", ".png",
-                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
-                    FileOutputStream out = new FileOutputStream(tmpFile);
-                    bmp.compress(Bitmap.CompressFormat.PNG, 90, out);
-                    out.close();
-                    Intent share = new Intent(Intent.ACTION_SEND);
-                    share.setType("image/png");
-                    share.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(tmpFile));
-                    startActivity(share);
-                    Toast.makeText(this, String.format("Extracted into: %s", tmpFile.getAbsolutePath()), Toast.LENGTH_SHORT).show();
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                    Toast.makeText(this, "Error occured while extracting bitmap", Toast.LENGTH_SHORT).show();
-                }
-                return true;
-            */
         }
 
         return super.onOptionsItemSelected(item);
@@ -454,7 +409,6 @@ public class MainActivity extends AppCompatActivity {
         return image;
     }
 
-
     //will check all permissions in PERMISSIONS String array to see if they have been granted
     public static boolean hasPermissions(Context context, String... permissions) {
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null) {
@@ -467,7 +421,6 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    //currently unused from default activity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
