@@ -5,7 +5,18 @@
 
 
     tools:ignore="UnusedAttribute">
+    
+    <item
+        android:id="@+id/action_Hide_Buttons"
+        android:orderInCategory="100"
+        app:showAsAction="never"
+        android:title="Hide Buttons" />
 
+    <item
+        android:id="@+id/action_Show_Buttons"
+        android:orderInCategory="200"
+        app:showAsAction="never"
+        android:title="Show Buttons" />
     <item
         android:id="@+id/menu_zoom_toggle"
         android:title="@string/menu_zoom_disable"/>
@@ -36,6 +47,8 @@
     <item
         android:id="@+id/menu_scale_random"
         android:title="@string/menu_zoom_random"/>
+
+    <!--
     <item
         android:id="@+id/menu_matrix_restore"
         android:title="@string/menu_matrix_restore"/>
@@ -44,17 +57,5 @@
         android:title="@string/menu_matrix_capture"/>
     <item
         android:id="@+id/extract_visible_bitmap"
-        android:title="@string/extract_visible_bitmap"/>
-
-    <item
-        android:id="@+id/action_Hide_Buttons"
-        android:orderInCategory="100"
-        app:showAsAction="never"
-        android:title="Hide Buttons" />
-
-    <item
-        android:id="@+id/action_Show_Buttons"
-        android:orderInCategory="200"
-        app:showAsAction="never"
-        android:title="Show Buttons" />
+        android:title="@string/extract_visible_bitmap"/> -->
 </menu>

@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
     private static int BITMAP_IMAGE_VIEW_HEIGHT;
 
     private Uri mCurrentPhotoUri = null;
-    private ImageView imgView;
+    private PhotoView photoView;
 
     //value after request granted
 
@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
 
         getDisplaySize(); //BUG
 
-        ImageView mImageView = (ImageView) findViewById(R.id.primaryImage);
+        PhotoView mImageView = (PhotoView) findViewById(R.id.primaryImage);
         mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
 
         //Drawable bitmap = ContextCompat.getDrawable(this, R.drawable.wallpaper);
@@ -314,12 +314,16 @@ public class MainActivity extends AppCompatActivity {
                 showToast(String.format(SCALE_TOAST_STRING, randomScale));
 
                 return true;
+
+            /* it's dead, jim
             case R.id.menu_matrix_restore:
                 if (mCurrentDisplayMatrix == null) {}
                     //showToast("You need to capture display matrix first");
                 else
                     mAttacher.setDisplayMatrix(mCurrentDisplayMatrix);
                 return true;
+
+
             case R.id.menu_matrix_capture:
                 mCurrentDisplayMatrix = new Matrix();
                 mAttacher.getDisplayMatrix(mCurrentDisplayMatrix);
@@ -342,18 +346,11 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Error occured while extracting bitmap", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+            */
         }
 
         return super.onOptionsItemSelected(item);
     }
-
-    /*
-        After spending more time on trying to properly scale coordinates than
-        anything else in this project we turned to the internet.
-        The getPointerCoords method was found here:
-        http://stackoverflow.com/a/9945896
-        posted by user akonsu
-     */
 
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -395,7 +392,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         try {
-            imgView = (ImageView) findViewById(R.id.primaryImage);
+            photoView = (PhotoView) findViewById(R.id.primaryImage);
             // When an Image is picked from gallery
             if (requestCode == RESULT_LOAD_IMG && resultCode == RESULT_OK && null != data) {
                 // Get the Image from data
@@ -404,12 +401,12 @@ public class MainActivity extends AppCompatActivity {
 
                 // Set the Image in ImageView after resizing if too large
                 Picasso
-                        .with(imgView.getContext())
+                        .with(photoView.getContext())
                         .load(selectedImage)
                         .error(R.mipmap.ic_failed)
                         .resize(DISPLAY_WIDTH,0)
                         .onlyScaleDown()
-                        .into(imgView);
+                        .into(photoView);
 
                 mCurrentPhotoUri = selectedImage;
 
@@ -417,22 +414,20 @@ public class MainActivity extends AppCompatActivity {
             } else if (requestCode == RESULT_TAKE_PHOTO && resultCode == RESULT_OK){
                 // Set the Image in ImageView after resizing if too large
                 Picasso
-                        .with(imgView.getContext())
+                        .with(photoView.getContext())
                         .load(mCurrentPhotoUri)
                         .error(R.mipmap.ic_failed)
                         .rotate(90)
                         .resize(DISPLAY_WIDTH,0)
                         .onlyScaleDown()
-                        .into(imgView);
-
-
+                        .into(photoView);
             } else {
                 Toast.makeText(this, "You haven't selected an image.",
                         Toast.LENGTH_LONG).show();
             }
 
-            PRIMARY_IMAGE_VIEW_HEIGHT = imgView.getHeight();
-            PRIMARY_IMAGE_VIEW_WIDTH = imgView.getWidth();
+            PRIMARY_IMAGE_VIEW_HEIGHT = photoView.getHeight();
+            PRIMARY_IMAGE_VIEW_WIDTH = photoView.getWidth();
 
         } catch (Exception e) {
             System.out.println("******************************************************");
@@ -479,20 +474,4 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
-
-
-    //currently unused from default activity
-    /*
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        //noinspection SimplifiableIfStatement
-
-
-        return super.onOptionsItemSelected(item);
-    }
-    */
 }
