@@ -451,30 +451,14 @@ public class MainActivity extends AppCompatActivity {
 
         System.out.println(tap_location);
 
-
-        final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), tap_location,
-                Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
-
-        View snackBarView = alert.getView();
-        snackBarView.setBackgroundColor(Color.parseColor("#313031"));
-
-        alert.setAction("Dismiss", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                alert.dismiss();
-            }
-        });
-
-        alert.show();
-
-        /*
         try {
-            int pixel = bitmap.getPixel(x, y); //touched pixel
+            int pixel = bitmap.getPixel(tap_location_x, tap_location_y); //touched pixel
 
             int red = Color.red(pixel);
             int green = Color.green(pixel);
             int blue = Color.blue(pixel);
 
+            /*
             //totals to be used for averaging
             int redTotal = 0;
             int greenTotal = 0;
@@ -490,14 +474,11 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("offset: " + offset);
 
             for (int i = x - offset; i < x + offset; i++) {
-
                 for (int j = y - offset; j < y + offset; j++) {
-
                     //totalling the RGB values
                     redTotal += Color.red(bitmap.getPixel(i,j));
                     greenTotal += Color.green(bitmap.getPixel(i,j));
                     blueTotal += Color.blue(bitmap.getPixel(i,j));
-
                 }
             }
 
@@ -511,11 +492,11 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("Average Red: " + avgRed);
             System.out.println("Average Green: " + avgGreen);
             System.out.println("Average Blue: " + avgBlue);
+            */
 
-            System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
-            String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
+            String color = "R: " + red + " B: " + blue + " G: " + green;
 
-            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
+            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), color,
                     Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
 
             View snackBarView = alert.getView();
@@ -530,10 +511,9 @@ public class MainActivity extends AppCompatActivity {
 
             alert.show();
 
-        } catch (Exception e){
-            System.out.println("EXCEPTION IN GETCOLORINFO.");
+        } catch (Exception e) {
+            System.out.println("getColor died, may it RIP");
             e.printStackTrace();
         }
-        */
     }
 }
