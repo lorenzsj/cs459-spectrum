@@ -54,7 +54,7 @@ import static android.os.Environment.getExternalStoragePublicDirectory;
  * PhotoView library did not assess or provide solutions to conflicting code.
  *
  * TODO:
- *  1. Line 161    - Implement Color Stealer
+ *  1. Line 463    - Rework color averaging system
  *  2. Line 354-74 - Picasso should be looked at if possible. It seems fine after using the
  *                   PhotoView class *1
  *
@@ -436,7 +436,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    private void getColorInfo( View v, float x, float y) {
+    private boolean getColorInfo( View v, float x, float y) {
         Bitmap bitmap = ((BitmapDrawable) photoView.getDrawable()).getBitmap();
 
         /* debug */
@@ -444,12 +444,14 @@ public class MainActivity extends AppCompatActivity {
         System.out.println(resolution);
         /* debug */
 
+        //convert coordinates to integers
         int tap_location_x = (int)(bitmap.getWidth() * x);
         int tap_location_y = (int)(bitmap.getHeight()* y);
 
+        /* debug */
         String tap_location = "x: " + tap_location_x + " y: " + tap_location_y;
-
         System.out.println(tap_location);
+        /* debug */
 
         try {
             int pixel = bitmap.getPixel(tap_location_x, tap_location_y); //touched pixel
@@ -458,6 +460,7 @@ public class MainActivity extends AppCompatActivity {
             int green = Color.green(pixel);
             int blue = Color.blue(pixel);
 
+            //Rework color averaging system - Old code below
             /*
             //totals to be used for averaging
             int redTotal = 0;
@@ -494,6 +497,7 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("Average Blue: " + avgBlue);
             */
 
+            /* output color data to snackbar */
             String color = "R: " + red + " B: " + blue + " G: " + green;
 
             final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), color,
@@ -510,10 +514,21 @@ public class MainActivity extends AppCompatActivity {
             });
 
             alert.show();
+            /* output color data to snackbar */
+
+            return true;
 
         } catch (Exception e) {
-            System.out.println("getColor died, may it RIP");
+            Context context = getApplicationContext();
+            String text = "It's dead, Jim. Unable to locate color data.";
+            int duration = Toast.LENGTH_SHORT;
+
+            Toast toast = Toast.makeText(context, text, duration);
+            toast.show();
+
             e.printStackTrace();
+
+            return false;
         }
     }
 }
