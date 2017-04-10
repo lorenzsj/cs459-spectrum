@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Uri mCurrentPhotoUri = null;
     private PhotoView photoView;
+    private ColorLabels colors;
 
     static final String PHOTO_TAP_TOAST_STRING = "Photo Tap! X: %.2f %% Y:%.2f %% ID: %d";
     static final String SCALE_TOAST_STRING = "Scaled to: %.2ff";
@@ -116,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
 
         getDisplaySize(); //BUG
 
+        colors = new ColorLabels();
+
         PhotoView mImageView = (PhotoView) findViewById(R.id.primaryImage);
         mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
 
@@ -134,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick( View view ) {
                 dispatchTakePictureIntent();
+                mAttacher.setScaleType(ScaleType.CENTER);
             }
         });
 
@@ -348,6 +352,9 @@ public class MainActivity extends AppCompatActivity {
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         // Start the Intent
         startActivityForResult(galleryIntent, RESULT_LOAD_IMG);
+        mAttacher.setScaleType(ScaleType.CENTER);
+        mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
     }
 
     @Override
@@ -461,7 +468,7 @@ public class MainActivity extends AppCompatActivity {
             int blue = Color.blue(pixel);
 
             //Rework color averaging system - Old code below
-            /*
+
             //totals to be used for averaging
             int redTotal = 0;
             int greenTotal = 0;
@@ -476,8 +483,8 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("Number of pixels in square: " + numPixels);
             System.out.println("offset: " + offset);
 
-            for (int i = x - offset; i < x + offset; i++) {
-                for (int j = y - offset; j < y + offset; j++) {
+            for (int i = tap_location_x - offset; i < tap_location_x + offset; i++) {
+                for (int j = tap_location_y - offset; j < tap_location_y + offset; j++) {
                     //totalling the RGB values
                     redTotal += Color.red(bitmap.getPixel(i,j));
                     greenTotal += Color.green(bitmap.getPixel(i,j));
@@ -495,10 +502,11 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("Average Red: " + avgRed);
             System.out.println("Average Green: " + avgGreen);
             System.out.println("Average Blue: " + avgBlue);
-            */
+
 
             /* output color data to snackbar */
-            String color = "R: " + red + " B: " + blue + " G: " + green;
+            colors.setRGB(avgRed, avgGreen, avgBlue);
+            String color = "Average Color: " + colors.getColor() + "\nR: " + avgRed + " G: " + avgGreen + " B: " + avgBlue;
 
             final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), color,
                     Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
