@@ -4,6 +4,7 @@
 
     <string name="menu_zoom_enable">Enable Zoom</string>
     <string name="menu_zoom_disable">Disable Zoom</string>
+<<<<<<< HEAD
     <string name="menu_scale_fit_center">Fit Center</string>
     <string name="menu_scale_fit_start">Fit Top-Right</string>
     <string name="menu_scale_fit_end">Fit Bottom-Right</string>
@@ -17,6 +18,22 @@
     <string name="menu_matrix_restore">Restore Display Matrix</string>
     <string name="menu_matrix_capture">Capture Display Matrix</string>
     <string name="extract_visible_bitmap">Extract visible bitmap</string>-->
+=======
+    <string name="menu_scale_fit_center">Change to FIT_CENTER</string>
+    <string name="menu_scale_fit_start">Change to FIT_START</string>
+    <string name="menu_scale_fit_end">Change to FIT_END</string>
+    <string name="menu_scale_fit_xy">Change to FIT_XY</string>
+    <string name="menu_scale_center">Change to CENTER</string>
+    <string name="menu_scale_center_inside">Change to CENTER_INSIDE</string>
+    <string name="menu_scale_center_crop">Change to CENTER_CROP</string>
+    <string name="menu_zoom_random_animate">Animate scale to random value</string>
+    <string name="menu_zoom_random">Set scale to random value</string>
+    <string name="menu_matrix_restore">Restore Display Matrix</string>
+    <string name="menu_matrix_capture">Capture Display Matrix</string>
+    <string name="extract_visible_bitmap">Extract visible bitmap</string>
+
+
+>>>>>>> 7931d0e3fecfe163c5b2d105f4fac0c176466eb8
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
