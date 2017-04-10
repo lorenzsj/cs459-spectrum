@@ -471,19 +471,7 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_Hide_Buttons) {
-            ImageButton cameraButton = (ImageButton)findViewById(R.id.cameraButton);
-            ImageButton importButton = (ImageButton)findViewById(R.id.importButton);
 
-            cameraButton.setVisibility(View.GONE);
-            importButton.setVisibility(View.GONE);
-        } else if (id == R.id.action_Show_Buttons) {
-            ImageButton cameraButton = (ImageButton)findViewById(R.id.cameraButton);
-            ImageButton importButton = (ImageButton)findViewById(R.id.importButton);
-
-            cameraButton.setVisibility(View.VISIBLE);
-            importButton.setVisibility(View.VISIBLE);
-        }
 
         return super.onOptionsItemSelected(item);
     }
