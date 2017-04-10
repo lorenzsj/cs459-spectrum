@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -29,19 +30,25 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
+import android.widget.ImageView.ScaleType;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Random;
 
 import uk.co.senab.photoview.PhotoView;
 import uk.co.senab.photoview.PhotoViewAttacher;
-
+import uk.co.senab.photoview.PhotoViewAttacher.OnMatrixChangedListener;
+import uk.co.senab.photoview.PhotoViewAttacher.OnPhotoTapListener;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
 
@@ -70,25 +77,38 @@ public class MainActivity extends AppCompatActivity {
 
     private Uri mCurrentPhotoUri = null;
     private ImageView imgView;
+
+    //value after request granted
+
+    /////////////////////////////////
+
+    static final String PHOTO_TAP_TOAST_STRING = "Photo Tap! X: %.2f %% Y:%.2f %% ID: %d";
+    static final String SCALE_TOAST_STRING = "Scaled to: %.2ff";
+    static final String FLING_LOG_STRING = "Fling velocityX: %.2f, velocityY: %.2f";
+
+    private TextView mCurrMatrixTv;
+
     private PhotoViewAttacher mAttacher;
 
+    private Toast mCurrentToast;
+
+    private Matrix mCurrentDisplayMatrix = null;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
     private final String[] PERMISSIONS = {Manifest.permission.CAMERA,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
-    private final int PERMISSION_ALL = 1; //value after request granted
+    private final int PERMISSION_ALL = 1;
 
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelable("imageUri", mCurrentPhotoUri);
-
-        super.onSaveInstanceState(outState);
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -96,7 +116,24 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         }
 
-        getDisplaySize();
+        getDisplaySize(); //BUG
+
+        ImageView mImageView = (ImageView) findViewById(R.id.primaryImage);
+        mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
+
+        //Drawable bitmap = ContextCompat.getDrawable(this, R.drawable.wallpaper);
+        //mImageView.setImageDrawable(bitmap);
+
+        // The MAGIC happens here!
+        mAttacher = new PhotoViewAttacher(mImageView);
+
+        // Lets attach some listeners, not required though!
+        mAttacher.setOnMatrixChangeListener(new MatrixChangeListener());
+        mAttacher.setOnPhotoTapListener(new PhotoTapListener());
+        mAttacher.setOnSingleFlingListener(new SingleFlingListener());
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        //client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
 
         ImageButton cameraButton = (ImageButton) findViewById(R.id.cameraButton);
         ImageButton importButton = (ImageButton) findViewById(R.id.importButton);
@@ -117,33 +154,88 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+    }
 
-        imgView = (ImageView) findViewById(R.id.primaryImage);
-        mAttacher = new PhotoViewAttacher(imgView);
-        mAttacher.update();
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
 
-        //addTouchListener(); // stephen
+        // Need to call clean-up
+        mAttacher.cleanup();
+    }
 
-        if (savedInstanceState != null) {
-            System.out.println("LOADING URI" );
+    /* test 123 */
+    private class PhotoTapListener implements OnPhotoTapListener {
 
-            mCurrentPhotoUri = savedInstanceState.getParcelable("imageUri");
+        @Override
+        public void onPhotoTap(View view, float x, float y) {
+            float xPercentage = x * 100f;
+            float yPercentage = y * 100f;
 
-            System.out.println("Reloading image.");
+            //showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
+            //getColorInfo(view, );
 
-            Picasso
-                    .with(imgView.getContext())
-                    .load(mCurrentPhotoUri)
-                    .error(R.mipmap.ic_failed)
-                    .resize(DISPLAY_WIDTH,0)
-                    .onlyScaleDown()
-                    .into(imgView);
+            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), "color here",
+                    Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
 
-            //reloadImage(mCurrentPhotoUri);
+            View snackBarView = alert.getView();
+            snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+
+            alert.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    alert.dismiss();
+                }
+            });
+
+            alert.show();
+        }
+
+        @Override
+        public void onOutsidePhotoTap() {
+            //showToast("You have a tap event on the place where out of the photo.");
         }
     }
 
-    private void getDisplaySize(){
+    private void showToast(CharSequence text) {
+        if (null != mCurrentToast) {
+            mCurrentToast.cancel();
+        }
+
+        mCurrentToast = Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT);
+        mCurrentToast.show();
+    }
+
+    private class MatrixChangeListener implements OnMatrixChangedListener {
+
+        @Override
+        public void onMatrixChanged(RectF rect) {
+            mCurrMatrixTv.setText(rect.toString());
+        }
+    }
+
+    private class SingleFlingListener implements PhotoViewAttacher.OnSingleFlingListener {
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            if (BuildConfig.DEBUG) {
+                Log.d("PhotoView", String.format(FLING_LOG_STRING, velocityX, velocityY));
+            }
+            return true;
+        }
+    }
+    /* test 123 */
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem zoomToggle = menu.findItem(R.id.menu_zoom_toggle);
+        assert null != zoomToggle;
+        zoomToggle.setTitle(mAttacher.canZoom() ? R.string.menu_zoom_disable : R.string.menu_zoom_enable);
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    private void getDisplaySize(){ //BUG
         Display display = getWindowManager().getDefaultDisplay();
         Point size = new Point();
 
@@ -155,44 +247,84 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("Display width x height: " + DISPLAY_WIDTH + " x " + DISPLAY_HEIGHT);
     }
 
-    /* start touch functions */
-    private void addTouchListener() {
-        imgView = (ImageView)findViewById(R.id.primaryImage);
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_zoom_toggle:
+                mAttacher.setZoomable(!mAttacher.canZoom());
+                return true;
 
-        imgView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            case R.id.menu_scale_fit_center:
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
+                return true;
 
-                if (event.getAction() == MotionEvent.ACTION_UP) { //only runs the following code when finger is lifted
-                    try {
+            case R.id.menu_scale_fit_start:
+                mAttacher.setScaleType(ScaleType.FIT_START);
+                return true;
 
-                        ImageView image = (ImageView)findViewById(R.id.primaryImage);
+            case R.id.menu_scale_fit_end:
+                mAttacher.setScaleType(ScaleType.FIT_END);
+                return true;
 
-                        float[] coord = getPointerCoords(image,event);
+            case R.id.menu_scale_fit_xy:
+                mAttacher.setScaleType(ScaleType.FIT_XY);
+                return true;
 
-                        System.out.println(coord[0] + ", " + coord[1]);
+            case R.id.menu_scale_scale_center:
+                mAttacher.setScaleType(ScaleType.CENTER);
+                return true;
 
-                        int X_Image = Math.round(coord[0]);
-                        int Y_Image = Math.round(coord[1]);
+            case R.id.menu_scale_scale_center_crop:
+                mAttacher.setScaleType(ScaleType.CENTER_CROP);
+                return true;
 
-                        getBitmapSize(v);
+            case R.id.menu_scale_scale_center_inside:
+                mAttacher.setScaleType(ScaleType.CENTER_INSIDE);
+                return true;
 
-                        System.out.println("Get colors of: (" + X_Image + ", " + Y_Image + ")");
+            case R.id.menu_scale_random_animate:
+            case R.id.menu_scale_random:
+                Random r = new Random();
 
-                        if (X_Image <= BITMAP_IMAGE_VIEW_WIDTH && Y_Image <= BITMAP_IMAGE_VIEW_HEIGHT ) {
-                            getColorInfo(v, X_Image,Y_Image);
+                float minScale = mAttacher.getMinimumScale();
+                float maxScale = mAttacher.getMaximumScale();
+                float randomScale = minScale + (r.nextFloat() * (maxScale - minScale));
+                mAttacher.setScale(randomScale, item.getItemId() == R.id.menu_scale_random_animate);
 
-                        } else {
-                            Toast.makeText(getApplicationContext(), "Touched outside of image.", Toast.LENGTH_SHORT).show();
-                        }
+                //showToast(String.format(SCALE_TOAST_STRING, randomScale));
 
-                    } catch (Exception e) {
-
-                    }
+                return true;
+            case R.id.menu_matrix_restore:
+                if (mCurrentDisplayMatrix == null) {}
+                    //showToast("You need to capture display matrix first");
+                else
+                    mAttacher.setDisplayMatrix(mCurrentDisplayMatrix);
+                return true;
+            case R.id.menu_matrix_capture:
+                mCurrentDisplayMatrix = new Matrix();
+                mAttacher.getDisplayMatrix(mCurrentDisplayMatrix);
+                return true;
+            case R.id.extract_visible_bitmap:
+                try {
+                    Bitmap bmp = mAttacher.getVisibleRectangleBitmap();
+                    File tmpFile = File.createTempFile("photoview", ".png",
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS));
+                    FileOutputStream out = new FileOutputStream(tmpFile);
+                    bmp.compress(Bitmap.CompressFormat.PNG, 90, out);
+                    out.close();
+                    Intent share = new Intent(Intent.ACTION_SEND);
+                    share.setType("image/png");
+                    share.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(tmpFile));
+                    startActivity(share);
+                    Toast.makeText(this, String.format("Extracted into: %s", tmpFile.getAbsolutePath()), Toast.LENGTH_SHORT).show();
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                    Toast.makeText(this, "Error occured while extracting bitmap", Toast.LENGTH_SHORT).show();
                 }
-                return false;
-            }
-        });
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     /*
@@ -202,29 +334,6 @@ public class MainActivity extends AppCompatActivity {
         http://stackoverflow.com/a/9945896
         posted by user akonsu
      */
-    final float[] getPointerCoords(ImageView view, MotionEvent e)
-    {
-        final int index = e.getActionIndex();
-        final float[] coords = new float[] { e.getX(index), e.getY(index) };
-        Matrix matrix = new Matrix();
-        view.getImageMatrix().invert(matrix);
-        matrix.postTranslate(view.getScrollX(), view.getScrollY());
-        matrix.mapPoints(coords);
-        return coords;
-    }
-
-    public boolean onTouchEvent(MotionEvent e) {
-        float x = e.getX();
-        float y = e.getY();
-
-        switch (e.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                System.out.print("Pressed");
-        }
-
-        return true;
-    }
-    /* end touch functions */
 
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -315,92 +424,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void getBitmapSize( View v ) {
-        ImageView imageView = ((ImageView) v);
-        Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
-
-        BITMAP_IMAGE_VIEW_HEIGHT = bitmap.getHeight();
-        BITMAP_IMAGE_VIEW_WIDTH = bitmap.getWidth();
-
-        System.out.println("Bitmap Height: " + BITMAP_IMAGE_VIEW_HEIGHT);
-        System.out.println("Bitmap Width: " + BITMAP_IMAGE_VIEW_WIDTH);
-    }
-
-
-    private void getColorInfo( View v, int x, int y){
-        ImageView imageView = ((ImageView)v);
-        Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
-
-        System.out.println("BITMAP SIZE w x h: " + bitmap.getHeight() + " x " + bitmap.getWidth());
-
-        try {
-            int pixel = bitmap.getPixel(x, y); //touched pixel
-
-            int red = Color.red(pixel);
-            int green = Color.green(pixel);
-            int blue = Color.blue(pixel);
-
-            //totals to be used for averaging
-            int redTotal = 0;
-            int greenTotal = 0;
-            int blueTotal = 0;
-
-            //square property setup for gathering pixel info
-            int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
-            int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
-            int offset = (int)Math.floor((float)squareWidth/2.0f);
-
-            System.out.println("Square width: " + squareWidth);
-            System.out.println("Number of pixels in square: " + numPixels);
-            System.out.println("offset: " + offset);
-
-            for (int i = x - offset; i < x + offset; i++) {
-
-                for (int j = y - offset; j < y + offset; j++) {
-
-                    //totalling the RGB values
-                    redTotal += Color.red(bitmap.getPixel(i,j));
-                    greenTotal += Color.green(bitmap.getPixel(i,j));
-                    blueTotal += Color.blue(bitmap.getPixel(i,j));
-
-                }
-            }
-
-            System.out.println("Red Total: " + redTotal + "   Green Total: " + greenTotal + "   Blue Total: " + blueTotal);
-
-            //calculating average values
-            int avgRed = redTotal/numPixels;
-            int avgGreen = greenTotal/numPixels;
-            int avgBlue = blueTotal/numPixels;
-
-            System.out.println("Average Red: " + avgRed);
-            System.out.println("Average Green: " + avgGreen);
-            System.out.println("Average Blue: " + avgBlue);
-
-            System.out.println("Pixel Color: R " + red + "  G " + green + "  B " + blue);
-            String message = "Average RGB: " + avgRed + ", " + avgGreen + ", " + avgBlue;
-
-            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), message,
-                    Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
-
-            View snackBarView = alert.getView();
-            snackBarView.setBackgroundColor(Color.parseColor("#313031"));
-
-            alert.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    alert.dismiss();
-                }
-            });
-
-            alert.show();
-
-        } catch (Exception e){
-            System.out.println("EXCEPTION IN GETCOLORINFO.");
-            e.printStackTrace();
-        }
-    }
-
     //returns a unique filename using a date-time stamp
     private File createImageFile() throws IOException {
         // Create an image file name
@@ -439,6 +462,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     //currently unused from default activity
+    /*
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -462,4 +486,5 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+    */
 }
