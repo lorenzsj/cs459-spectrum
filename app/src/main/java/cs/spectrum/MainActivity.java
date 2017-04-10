@@ -187,22 +187,7 @@ public class MainActivity extends AppCompatActivity {
             float yPercentage = y * 100f;
 
             showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
-            //get color info here
-
-            final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), "color here",
-                    Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
-
-            View snackBarView = alert.getView();
-            snackBarView.setBackgroundColor(Color.parseColor("#313031"));
-
-            alert.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    alert.dismiss();
-                }
-            });
-
-            alert.show();
+            getColorInfo(view, x, y);
         }
 
         @Override
@@ -451,12 +436,38 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    private void getColorInfo( View v, int x, int y){
-        ImageView imageView = ((ImageView)v);
-        Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+    private void getColorInfo( View v, float x, float y) {
+        Bitmap bitmap = ((BitmapDrawable) photoView.getDrawable()).getBitmap();
 
-        System.out.println("BITMAP SIZE w x h: " + bitmap.getHeight() + " x " + bitmap.getWidth());
+        /* debug */
+        String resolution = "h:" + bitmap.getHeight() + " x:" + bitmap.getWidth();
+        System.out.println(resolution);
+        /* debug */
 
+        int tap_location_x = (int)(bitmap.getWidth() * x);
+        int tap_location_y = (int)(bitmap.getHeight()* y);
+
+        String tap_location = "x: " + tap_location_x + " y: " + tap_location_y;
+
+        System.out.println(tap_location);
+
+
+        final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), tap_location,
+                Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
+
+        View snackBarView = alert.getView();
+        snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+
+        alert.setAction("Dismiss", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                alert.dismiss();
+            }
+        });
+
+        alert.show();
+
+        /*
         try {
             int pixel = bitmap.getPixel(x, y); //touched pixel
 
@@ -523,5 +534,6 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("EXCEPTION IN GETCOLORINFO.");
             e.printStackTrace();
         }
+        */
     }
 }
