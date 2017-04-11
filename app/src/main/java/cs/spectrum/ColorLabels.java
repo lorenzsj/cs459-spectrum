@@ -59,7 +59,7 @@ public class ColorLabels {
             if (R < 100) return "Black";
             else return "White";
         }
-        return "NOT A COLOR";
+        return "Unrecognized";
     }
 
     public boolean red()

@@ -14,38 +14,38 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Parcel;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.util.Log;
-import android.widget.ImageView.ScaleType;
-import com.google.android.gms.common.api.GoogleApiClient;
+import android.graphics.Color;
+
 import com.squareup.picasso.Picasso;
+
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
+
 import uk.co.senab.photoview.PhotoView;
 import uk.co.senab.photoview.PhotoViewAttacher;
 import uk.co.senab.photoview.PhotoViewAttacher.OnMatrixChangedListener;
 import uk.co.senab.photoview.PhotoViewAttacher.OnPhotoTapListener;
+
+import static android.graphics.Color.argb;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
 /**
@@ -475,7 +475,7 @@ public class MainActivity extends AppCompatActivity {
             int blueTotal = 0;
 
             //square property setup for gathering pixel info
-            int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
+            int squareWidth = Math.round(DISPLAY_WIDTH * .025f); //square width is 5% of screen size
             int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
             int offset = (int)Math.floor((float)squareWidth/2.0f);
 
@@ -508,11 +508,14 @@ public class MainActivity extends AppCompatActivity {
             colors.setRGB(avgRed, avgGreen, avgBlue);
             String color = "Average Color: " + colors.getColor() + "\nR: " + avgRed + " G: " + avgGreen + " B: " + avgBlue;
 
+
             final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), color,
                     Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
 
+
             View snackBarView = alert.getView();
             snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+
 
             alert.setAction("Dismiss", new View.OnClickListener() {
                 @Override
