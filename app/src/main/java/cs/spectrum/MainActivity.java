@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick( View view ) {
                 dispatchTakePictureIntent();
-                mAttacher.setScaleType(ScaleType.CENTER);
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
             }
         });
 
@@ -167,6 +167,8 @@ public class MainActivity extends AppCompatActivity {
                     .onlyScaleDown()
                     .into(photoView);
         }
+        mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
     }
 
     @Override
@@ -380,6 +382,9 @@ public class MainActivity extends AppCompatActivity {
 
                 mCurrentPhotoUri = selectedImage;
 
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
+
                 // When an image is taken from camera
             } else if (requestCode == RESULT_TAKE_PHOTO && resultCode == RESULT_OK){
                 // Set the Image in ImageView after resizing if too large
@@ -391,6 +396,9 @@ public class MainActivity extends AppCompatActivity {
                         .resize(DISPLAY_WIDTH,0)
                         .onlyScaleDown()
                         .into(photoView);
+
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
             } else {
                 Toast.makeText(this, "You haven't selected an image.",
                         Toast.LENGTH_LONG).show();
@@ -475,7 +483,7 @@ public class MainActivity extends AppCompatActivity {
             int blueTotal = 0;
 
             //square property setup for gathering pixel info
-            int squareWidth = Math.round(DISPLAY_WIDTH * .025f); //square width is 5% of screen size
+            int squareWidth = Math.round(DISPLAY_WIDTH * .05f); //square width is 5% of screen size
             int numPixels = Math.round((float)Math.pow(squareWidth, 2)); //number of pixels in square
             int offset = (int)Math.floor((float)squareWidth/2.0f);
 
@@ -506,7 +514,7 @@ public class MainActivity extends AppCompatActivity {
 
             /* output color data to snackbar */
             colors.setRGB(avgRed, avgGreen, avgBlue);
-            String color = "Average Color: " + colors.getColor() + "\nR: " + avgRed + " G: " + avgGreen + " B: " + avgBlue;
+            String color = "Color: " + colors.getColor() + "\nR: " + avgRed + " G: " + avgGreen + " B: " + avgBlue;
 
 
             final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), color,
