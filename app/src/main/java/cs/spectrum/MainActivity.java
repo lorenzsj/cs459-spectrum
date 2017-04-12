@@ -14,38 +14,38 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Parcel;
 import android.provider.MediaStore;
-import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.util.Log;
-import android.widget.ImageView.ScaleType;
-import com.google.android.gms.common.api.GoogleApiClient;
+import android.graphics.Color;
+
 import com.squareup.picasso.Picasso;
+
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
+
 import uk.co.senab.photoview.PhotoView;
 import uk.co.senab.photoview.PhotoViewAttacher;
 import uk.co.senab.photoview.PhotoViewAttacher.OnMatrixChangedListener;
 import uk.co.senab.photoview.PhotoViewAttacher.OnPhotoTapListener;
+
+import static android.graphics.Color.argb;
 import static android.os.Environment.getExternalStoragePublicDirectory;
 
 /**
@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Uri mCurrentPhotoUri = null;
     private PhotoView photoView;
+    private ColorLabels colors;
 
     static final String PHOTO_TAP_TOAST_STRING = "Photo Tap! X: %.2f %% Y:%.2f %% ID: %d";
     static final String SCALE_TOAST_STRING = "Scaled to: %.2ff";
@@ -116,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
 
         getDisplaySize(); //BUG
 
+        colors = new ColorLabels();
+
         PhotoView mImageView = (PhotoView) findViewById(R.id.primaryImage);
         mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
 
@@ -134,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick( View view ) {
                 dispatchTakePictureIntent();
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
             }
         });
 
@@ -163,6 +167,8 @@ public class MainActivity extends AppCompatActivity {
                     .onlyScaleDown()
                     .into(photoView);
         }
+        mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
     }
 
     @Override
@@ -348,6 +354,9 @@ public class MainActivity extends AppCompatActivity {
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         // Start the Intent
         startActivityForResult(galleryIntent, RESULT_LOAD_IMG);
+        mAttacher.setScaleType(ScaleType.CENTER);
+        mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
     }
 
     @Override
@@ -373,6 +382,9 @@ public class MainActivity extends AppCompatActivity {
 
                 mCurrentPhotoUri = selectedImage;
 
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
+
                 // When an image is taken from camera
             } else if (requestCode == RESULT_TAKE_PHOTO && resultCode == RESULT_OK){
                 // Set the Image in ImageView after resizing if too large
@@ -384,6 +396,9 @@ public class MainActivity extends AppCompatActivity {
                         .resize(DISPLAY_WIDTH,0)
                         .onlyScaleDown()
                         .into(photoView);
+
+                mAttacher.setScaleType(ScaleType.FIT_CENTER);
+
             } else {
                 Toast.makeText(this, "You haven't selected an image.",
                         Toast.LENGTH_LONG).show();
@@ -461,7 +476,7 @@ public class MainActivity extends AppCompatActivity {
             int blue = Color.blue(pixel);
 
             //Rework color averaging system - Old code below
-            /*
+
             //totals to be used for averaging
             int redTotal = 0;
             int greenTotal = 0;
@@ -476,8 +491,8 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("Number of pixels in square: " + numPixels);
             System.out.println("offset: " + offset);
 
-            for (int i = x - offset; i < x + offset; i++) {
-                for (int j = y - offset; j < y + offset; j++) {
+            for (int i = tap_location_x - offset; i < tap_location_x + offset; i++) {
+                for (int j = tap_location_y - offset; j < tap_location_y + offset; j++) {
                     //totalling the RGB values
                     redTotal += Color.red(bitmap.getPixel(i,j));
                     greenTotal += Color.green(bitmap.getPixel(i,j));
@@ -495,16 +510,20 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("Average Red: " + avgRed);
             System.out.println("Average Green: " + avgGreen);
             System.out.println("Average Blue: " + avgBlue);
-            */
+
 
             /* output color data to snackbar */
-            String color = "R: " + red + " B: " + blue + " G: " + green;
+            colors.setRGB(avgRed, avgGreen, avgBlue);
+            String color = "Color: " + colors.getColor() + "\nR: " + avgRed + " G: " + avgGreen + " B: " + avgBlue;
+
 
             final Snackbar alert = Snackbar.make(findViewById(R.id.primaryImage), color,
                     Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.parseColor("#bbbbbb"));
 
+
             View snackBarView = alert.getView();
             snackBarView.setBackgroundColor(Color.parseColor("#313031"));
+
 
             alert.setAction("Dismiss", new View.OnClickListener() {
                 @Override
