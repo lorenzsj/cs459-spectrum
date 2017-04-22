@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
     static final String SCALE_TOAST_STRING = "Scaled to: %.2ff";
     static final String FLING_LOG_STRING = "Fling velocityX: %.2f, velocityY: %.2f";
 
-    private TextView mCurrMatrixTv;
+    //private TextView mCurrMatrixTv;
     private PhotoViewAttacher mAttacher;
     private Toast mCurrentToast;
     private Matrix mCurrentDisplayMatrix = null;
@@ -120,12 +120,12 @@ public class MainActivity extends AppCompatActivity {
         colors = new ColorLabels();
 
         PhotoView mImageView = (PhotoView) findViewById(R.id.primaryImage);
-        mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
+        //mCurrMatrixTv = (TextView) findViewById(R.id.tv_current_matrix);
 
         // The MAGIC happens here!
         mAttacher = new PhotoViewAttacher(mImageView);
 
-        mAttacher.setOnMatrixChangeListener(new MatrixChangeListener());
+        //mAttacher.setOnMatrixChangeListener(new MatrixChangeListener());
         mAttacher.setOnPhotoTapListener(new PhotoTapListener());
         mAttacher.setOnSingleFlingListener(new SingleFlingListener());
 
@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
             float xPercentage = x * 100f;
             float yPercentage = y * 100f;
 
-            showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
+            //showToast(String.format(PHOTO_TAP_TOAST_STRING, xPercentage, yPercentage, view == null ? 0 : view.getId()));
             getColorInfo(view, x, y);
         }
 
@@ -211,13 +211,13 @@ public class MainActivity extends AppCompatActivity {
         mCurrentToast.show();
     }
 
-    private class MatrixChangeListener implements OnMatrixChangedListener {
-
-        @Override
-        public void onMatrixChanged(RectF rect) {
-            mCurrMatrixTv.setText(rect.toString());
-        }
-    }
+//    private class MatrixChangeListener implements OnMatrixChangedListener {
+//
+//        @Override
+//        public void onMatrixChanged(RectF rect) {
+//            mCurrMatrixTv.setText(rect.toString());
+//        }
+//    }
 
     private class SingleFlingListener implements PhotoViewAttacher.OnSingleFlingListener {
 

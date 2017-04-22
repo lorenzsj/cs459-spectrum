@@ -83,7 +83,8 @@
                     android:layout_gravity="bottom|center_horizontal"
                     android:background="#60000000"
                     android:gravity="center"
-                    android:textColor="@android:color/white" />
+                    android:textColor="@android:color/white"
+                    android:visibility="invisible" />
             </FrameLayout>
 
 
